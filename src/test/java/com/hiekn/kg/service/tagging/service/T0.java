@@ -31,7 +31,8 @@ import org.junit.Test;
 public class T0 {
 	
 	private static final Logger log = Logger.getLogger(T0.class);
-	
+
+
 	@Test
 	public void t7() {
 		List<Long> list = Lists.newArrayList();

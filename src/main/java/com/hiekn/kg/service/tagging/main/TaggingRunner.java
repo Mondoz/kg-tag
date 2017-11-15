@@ -20,10 +20,10 @@ public class TaggingRunner {
 			int limit = allDoc / threads;
 			for (int i = 0; i < threads; i++) {
 				if (i == threads-1) {
-//					pool.submit(new TaggerUtil(i*limit, allDoc - (threads-1) * limit));
+					pool.submit(new TaggerUtil(i*limit, allDoc - (threads-1) * limit));
 					log.info("last thread " + i + "\t" + i*limit + "\t" + (allDoc - (threads-1) * limit));
 				} else {
-//					pool.submit(new TaggerUtil(i*limit, limit));
+					pool.submit(new TaggerUtil(i*limit, limit));
 					log.info(i + "\t" + i*limit + "\t" + limit);
 				}
 			}

@@ -21,6 +21,7 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.jsoup.Jsoup;
 
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -35,68 +36,70 @@ import java.util.Map.Entry;
  */
 public class TaggerUtil implements Runnable{
 	private static final Logger log = Logger.getLogger(TaggerUtil.class);
-	
+
 	private static Map<String, Double> idfMap = new HashMap<String, Double>();
 	private static final double WEIGHT_ARRAY[] = {0.15, 0.25, 0.1, 0.2, 0.2, 0.3};	//摘要、同义、父概念、子概念、实例、属性
 	private static final double[] ATTENUATION_FACTORS = {Math.sqrt(2) / 2};
 	private static final int TAGGING_NUM = 8;
-	
+
 	private int skip;
 	private int limit;
-	
+
 	public TaggerUtil(int skip,int limit) {
 		this.skip = skip;
 		this.limit = limit;
 	}
-	
-	private static MongoClient kgClient = KGMongoSingleton.getInstance().getMongoClient();
-	
-	private static Map<Integer,Map<Long,String>> classConceptMap = getClassConceptMap();
-	
-	public static void main(String[] args) throws IOException {
-//		FileWriter ffw = new FileWriter("data/first_class.txt");
-//		FileWriter sfw = new FileWriter("data/second_class.txt");
-//		FileWriter tfw = new FileWriter("data/third_class.txt");
-//		Map<Integer, Map<Long, String>> classConceptMap = new HashMap<Integer, Map<Long,String>>();
-//		MongoCollection<Document> col = kgClient.getDatabase(ConstResource.KG).getCollection("parent_son");
-//		Map<Long,String> fMap = new HashMap<Long,String>();
-//		Map<Long,String> sMap = new HashMap<Long,String>();
-//		Map<Long,String> tMap = new HashMap<Long,String>();
-//		MongoCursor<Document> fcursor = col.find(new Document("parent",5L)).iterator();
-//		String fs = "";
-//		String ss = "";
-//		String ts = "";
-//		while (fcursor.hasNext()) {
-//			Document doc = fcursor.next();
-//			fMap.put(doc.getLong("son"), getNameById(doc.getLong("son")));
-//			fs = fs + doc.getLong("son") + ",";
-//		}
-//		ffw.write(fs);
-//		ffw.flush();
-//		classConceptMap.put(1, fMap);
-//		MongoCursor<Document> scursor = col.find(new Document("parent",new Document("$in",fMap.keySet()))).iterator();
-//		while (scursor.hasNext()) {
-//			Document doc = scursor.next();
-//			sMap.put(doc.getLong("son"), getNameById(doc.getLong("son")));
-//			ss = ss + doc.getLong("son") + ",";
-//		}
-//		sfw.write(ss + "\r\n");
-//		sfw.flush();
-//		classConceptMap.put(2, sMap);
-//		MongoCursor<Document> tcursor = col.find(new Document("parent",new Document("$in",sMap.keySet()))).iterator();
-//		while (tcursor.hasNext()) {
-//			Document doc = tcursor.next();
-//			tMap.put(doc.getLong("son"), getNameById(doc.getLong("son")));
-//			ts = ts + doc.getLong("son") + ",";
-//		}
-//		tfw.write(ts);
-//		tfw.flush();
-//		ffw.close();
-//		sfw.close();
-//		tfw.close();
-//		classConceptMap.put(3, tMap);
+	public TaggerUtil() {
 	}
-	
+
+	private static MongoClient kgClient = KGMongoSingleton.getInstance().getMongoClient();
+
+	private static Map<Integer,Map<Long,String>> classConceptMap = getClassConceptMap();
+
+	public static void main(String[] args) throws IOException {
+		FileWriter ffw = new FileWriter("data/first_class.txt");
+		FileWriter sfw = new FileWriter("data/second_class.txt");
+		FileWriter tfw = new FileWriter("data/third_class.txt");
+		Map<Integer, Map<Long, String>> classConceptMap = new HashMap<Integer, Map<Long,String>>();
+		MongoCollection<Document> col = kgClient.getDatabase(ConstResource.KG).getCollection("parent_son");
+		Map<Long,String> fMap = new HashMap<Long,String>();
+		Map<Long,String> sMap = new HashMap<Long,String>();
+		Map<Long,String> tMap = new HashMap<Long,String>();
+		MongoCursor<Document> fcursor = col.find(new Document("parent",5L)).iterator();
+		String fs = "";
+		String ss = "";
+		String ts = "";
+		while (fcursor.hasNext()) {
+			Document doc = fcursor.next();
+			fMap.put(doc.getLong("son"), getNameById(doc.getLong("son")));
+			fs = fs + doc.getLong("son") + ",";
+		}
+		ffw.write(fs);
+		ffw.flush();
+		classConceptMap.put(1, fMap);
+		MongoCursor<Document> scursor = col.find(new Document("parent",new Document("$in",fMap.keySet()))).iterator();
+		while (scursor.hasNext()) {
+			Document doc = scursor.next();
+			sMap.put(doc.getLong("son"), getNameById(doc.getLong("son")));
+			ss = ss + doc.getLong("son") + ",";
+		}
+		sfw.write(ss + "\r\n");
+		sfw.flush();
+		classConceptMap.put(2, sMap);
+		MongoCursor<Document> tcursor = col.find(new Document("parent",new Document("$in",sMap.keySet()))).iterator();
+		while (tcursor.hasNext()) {
+			Document doc = tcursor.next();
+			tMap.put(doc.getLong("son"), getNameById(doc.getLong("son")));
+			ts = ts + doc.getLong("son") + ",";
+		}
+		tfw.write(ts);
+		tfw.flush();
+		ffw.close();
+		sfw.close();
+		tfw.close();
+		classConceptMap.put(3, tMap);
+	}
+
 	private static Map<Integer, Map<Long, String>> getClassConceptMap() {
 		Map<Integer, Map<Long, String>> classConceptMap = new HashMap<Integer, Map<Long,String>>();
 		System.out.println(ConstResource.KG);
@@ -149,7 +152,7 @@ public class TaggerUtil implements Runnable{
 		if (sourceType.equals("mongo")) {
 //			sourceClient = new MongoClient(sourceHost,sourcePort);
 			sourceClient = MongoSingleton.getInstance().getMongoClient();
-		} 
+		}
 		TransportClient targetEsClient = null;
 		BulkRequestBuilder bulk = null;
 		List<DBObject> resultDocList = new ArrayList<DBObject>();
@@ -171,7 +174,7 @@ public class TaggerUtil implements Runnable{
 		conceptSonList.addAll(findAllSon(col, 5L));
 		int level = 0;
 		Map<String,String> mapFields = reverseMap(ConstResource.MAPFIELDS);
-		
+
 		if (sourceType.equals("mongo")) {
 			DBCursor cursor = null;
 			cursor = sourceClient.getDB(sourceDB).getCollection(sourceCol).find().skip(skip).limit(limit);
@@ -247,7 +250,7 @@ public class TaggerUtil implements Runnable{
 							} else {
 								resultDoc.put("annotation_tag", new ArrayList<>());
 							}
-							
+
 							if (parentTaggingList.size() > 0) {
 								resultDoc.put("parent_annotation_tag", JSON.toJSONString(parentTaggingList));
 							} else {
@@ -290,7 +293,7 @@ public class TaggerUtil implements Runnable{
 							} else {
 								resultObj.put("annotation_tag", new ArrayList<>());
 							}
-							
+
 							if (parentTaggingList.size() > 0) {
 								resultObj.put("parent_annotation_tag", JSONArray.parse(JSON.toJSONString(parentTaggingList)));
 							} else {
@@ -311,7 +314,7 @@ public class TaggerUtil implements Runnable{
 							} else {
 								resultObj.put("annotation_3", new ArrayList<>());
 							}
-							
+
 							String source = JSON.toJSONString(resultObj);
 							bulk.add(targetEsClient.prepareIndex(targetDB, targetCol).setSource(source));
 						}
@@ -322,7 +325,7 @@ public class TaggerUtil implements Runnable{
 									new BasicDBObject("annotation_tag",JSON.toJSONString(taggingList))));
 						} else if (targetType.equals("es")) {
 							//TODO es
-							
+
 						}
 					}
 				}catch(Exception e){
@@ -334,7 +337,7 @@ public class TaggerUtil implements Runnable{
 				}
 			}
 		}
-		
+
 		if (targetType.equals("mongo")) {
 			if (resultDocList.size() > 0) {
 				targetMongoClient.getDB(targetDB).getCollection(targetCol).insert(resultDocList);
@@ -362,11 +365,94 @@ public class TaggerUtil implements Runnable{
 				sqlConn.close();
 			}
 			targetEsClient.close();
-		} 
+		}
 	}
-	
+
+	public static Document doSimpleTagByIndexUsingDB(Document doc) throws Exception {
+		log.info("start tagging ");
+		String taggingDBName = ConstResource.KG;
+		MongoCollection<Document> col = kgClient.getDatabase(taggingDBName).getCollection("parent_son");
+		String[] taggingField = ConstResource.FIELDS.split(",");
+		List<Long> entitySonList = new ArrayList<Long>();
+		entitySonList.addAll(findAllSon(col, 5L));
+		List<Long> conceptSonList = new ArrayList<Long>();
+		conceptSonList.addAll(findAllSon(col, 5L));
+		int level = 0;
+		Map<String,String> mapFields = reverseMap(ConstResource.MAPFIELDS);
+		String docId = doc.get("_id").toString();
+		String input = "";
+		for (String field : taggingField) {
+			if (doc.containsKey(field)) {
+				if (doc.get(field) != null) {
+					input = input + Jsoup.parse(doc.get(field).toString()).text() + "\t";
+				}
+			}
+		}
+		input = input.toLowerCase();
+		String text = input;
+		List<TaggingItem> taggingList = new ArrayList<TaggingItem>();
+		List<TaggingItem> parentTaggingList = new ArrayList<TaggingItem>();
+		List<TaggingItem> fparentTaggingList = new ArrayList<TaggingItem>();
+		List<TaggingItem> sparentTaggingList = new ArrayList<TaggingItem>();
+		List<TaggingItem> tparentTaggingList = new ArrayList<TaggingItem>();
+		Document resultDoc = new Document();
+		try{
+			long t0 = System.currentTimeMillis();
+			Map<String, List<TaggingItem>> tagResultMap = getTagProcess(taggingDBName, text, conceptSonList, entitySonList, level);
+			taggingList = tagResultMap.get("tagging");
+			parentTaggingList = tagResultMap.get("taggingParent");
+			fparentTaggingList = tagResultMap.get("ftaggingParent");
+			sparentTaggingList = tagResultMap.get("staggingParent");
+			tparentTaggingList = tagResultMap.get("ttaggingParent");
+//			log.info("process using " + (System.currentTimeMillis() - t0) + "\t" +System.currentTimeMillis());
+			//insert
+			//mongo 插入
+			for (String key : doc.keySet()) {
+				if (mapFields.containsKey(key)) {
+					if (key.equals("content")) {
+						List<String> contentList = new ArrayList<String>();
+						contentList = ContentFilter.getSplitContent(doc.get("content").toString());
+						resultDoc.put(mapFields.get(key), contentList);
+					} else {
+						resultDoc.put(mapFields.get(key), doc.get(key) != null ? doc.get(key) : "");
+					}
+				}
+			}
+			if (taggingList.size() > 0) {
+				resultDoc.put("annotation_tag", JSON.toJSONString(taggingList));
+			} else {
+				resultDoc.put("annotation_tag", new ArrayList<>());
+			}
+
+			if (parentTaggingList.size() > 0) {
+				resultDoc.put("parent_annotation_tag", JSON.toJSONString(parentTaggingList));
+			} else {
+				resultDoc.put("parent_annotation_tag", new ArrayList<>());
+			}
+			if (parentTaggingList.size() > 0) {
+				resultDoc.put("annotation_1", JSON.toJSONString(fparentTaggingList));
+			} else {
+				resultDoc.put("annotation_1", new ArrayList<>());
+			}
+			if (parentTaggingList.size() > 0) {
+				resultDoc.put("annotation_2", JSON.toJSONString(sparentTaggingList));
+			} else {
+				resultDoc.put("annotation_2", new ArrayList<>());
+			}
+			if (parentTaggingList.size() > 0) {
+				resultDoc.put("annotation_3", JSON.toJSONString(tparentTaggingList));
+			} else {
+				resultDoc.put("annotation_3", new ArrayList<>());
+			}
+		} catch (Exception e) {
+			log.error(e);
+			throw e;
+		}
+		return resultDoc;
+	}
+
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	private Map<String,List<TaggingItem>> getTagProcess(String taggingDBName, String text, List<Long> conceptSonList, List<Long> entitySonList, int level) {
+	private static Map<String,List<TaggingItem>> getTagProcess(String taggingDBName, String text, List<Long> conceptSonList, List<Long> entitySonList, int level) {
 		Map<String,List<TaggingItem>> taggingResultMap = Maps.newHashMap();
 		List<TaggingItem> taggingList = Lists.newArrayList();
 		List<TaggingItem> ftaggingList = Lists.newArrayList();
@@ -490,7 +576,7 @@ public class TaggerUtil implements Runnable{
         return false;
     }
 
-	private Map<String,Long> getNameMapById(String kgName, Long id) {
+	private static Map<String,Long> getNameMapById(String kgName, Long id) {
 		String name = "";
 		long concept = 0L;
 		Map<String,Long> nameMap = new HashMap<String,Long>();
@@ -511,7 +597,7 @@ public class TaggerUtil implements Runnable{
 		return nameMap;
 	}
 	
-	private Long getConceptById(Long id) {
+	private static Long getConceptById(Long id) {
 		String name = "";
 		long concept = 0L;
 		Map<String,Long> nameMap = new HashMap<String,Long>();
@@ -600,8 +686,25 @@ public class TaggerUtil implements Runnable{
 		}
 		return sonList;
 	}
-	
-	private Map<String,String> reverseMap(String str) {
+
+	public static List<Long> findAllSon(MongoCollection<Document> col,long id) {
+		List<Long> sonList = new ArrayList<Long>();
+		MongoCursor<Document> cursor = col.find(new Document("parent",id)).iterator();
+		try {
+			while (cursor.hasNext()) {
+				Document doc = cursor.next();
+				long sonId = Long.valueOf(doc.get("son").toString());
+				sonList.add(sonId);
+				List<Long> gSonList = findAllSon(col, sonId);
+				sonList.addAll(gSonList);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return sonList;
+	}
+
+	private static Map<String,String> reverseMap(String str) {
 		Map<String,String> originMap = JSON.parseObject(str, Map.class);
 		Map<String,String> map = new HashMap<String,String>();
 		for (Entry<String,String> entry : originMap.entrySet()) {

@@ -368,7 +368,7 @@ public class TaggerUtil implements Runnable{
 		}
 	}
 
-	public static Document doSimpleTagByIndexUsingDB(Document doc) throws Exception {
+	public static Document doSimpleTagByIndexUsingDB(String docString) throws Exception {
 		log.info("start tagging ");
 		String taggingDBName = ConstResource.KG;
 		MongoCollection<Document> col = kgClient.getDatabase(taggingDBName).getCollection("parent_son");
@@ -378,6 +378,7 @@ public class TaggerUtil implements Runnable{
 		List<Long> conceptSonList = new ArrayList<Long>();
 		conceptSonList.addAll(findAllSon(col, 5L));
 		int level = 0;
+		JSONObject doc = JSONObject.parseObject(docString);
 		Map<String,String> mapFields = reverseMap(ConstResource.MAPFIELDS);
 		String docId = doc.get("_id").toString();
 		String input = "";

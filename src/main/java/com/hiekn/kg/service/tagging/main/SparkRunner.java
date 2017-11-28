@@ -14,8 +14,6 @@ public class SparkRunner {
 	}
 
 	public static void sparkConnect(String[] args) {
-//		String host = "10.10.20.14:19130";
-
 		SparkConf conf = new SparkConf()
 				.setAppName("text_file")
 				;

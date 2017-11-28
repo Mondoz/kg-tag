@@ -8,35 +8,37 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.bson.Document;
 
-public class SparkTest {
+public class SparkRunner {
 	public static void main(String[] args) {
-		sparkConnect();
+		sparkConnect(args);
 	}
 
-	public static void sparkConnect() {
+	public static void sparkConnect(String[] args) {
 //		String host = "10.10.20.14:19130";
 
-		SparkConf conf = new SparkConf().setAppName("connect").setMaster("local")
-				.set("spark.mongodb.input.uri", "mongodb://192.168.1.134/tag.source")
+		SparkConf conf = new SparkConf()
+//				.setMaster("local")
+//				.set("spark.mongodb.input.partitioner","MongoPaginateByCountPartitioner")
+//				.set("spark.mongodb.input.uri", "mongodb://192.168.1.156:27017/u89_graph_ea33277a.entity_id")
+				.setAppName("text_file")
 //				.set("spark.mongodb.input.uri", "mongodb://"+ConstResource.MONGOURL + ":" + ConstResource.MONGOPORT +"/"+ ConstResource.MONGOSOURCEDB+"." + ConstResource.MONGOSOURCECOL)
-				.set("spark.mongodb.output.uri", "mongodb://192.168.1.134/tag.target");
 //				.set("spark.mongodb.output.uri", "mongodb://"+ConstResource.ES_URL + ":" + ConstResource.ES_PORT+"/"+ConstResource.ES_INDEX+"." + ConstResource.ES_TYPE);;
 				;
 		JavaSparkContext sc = new JavaSparkContext(conf);
-		JavaMongoRDD<Document> rdd = MongoSpark.load(sc);
 //		JavaMongoRDD<Document> parentSonRDD = MongoSpark.load(sc);
 //		Map<String, String> readOverrides = new HashMap<String, String>();
 //		readOverrides.put("collection", "entity_id");
 //		ReadConfig readConfig = ReadConfig.create(sc).withJavaOptions(readOverrides);
 //		JavaMongoRDD<Document> entIdRDD = MongoSpark.load(sc,readConfig);
 
-        JavaRDD<Document> resultRDD = sc.textFile("file:///home/hadoop/source.json")
+        JavaRDD<Document> resultRDD = sc.textFile(args[0],4).repartition(10)
                 .map(doc -> {
+//                    Document resultDoc = new Document("test","test_value");
                     Document resultDoc = TaggerUtil.doSimpleTagByIndexUsingDB(doc);
                     return resultDoc;
-                });
-
-		MongoSpark.save(resultRDD);
+		});
+		resultRDD.coalesce(1).saveAsTextFile(args[1]);
+//		MongoSpark.save(resultRDD);
 //		Map<Long,Set<Long>> parentIdMap = new HashMap<Long,Set<Long>>();
 //		parentSonRDD.foreach(s -> {
 //			long pid = s.getLong("parent");
@@ -68,7 +70,7 @@ public class SparkTest {
 //			}
 //			return new Tuple2<>(id,name);
 //		});
-//		resultRDD.foreach(tuple -> 	System.out.println(tuple._1 + "\t" + tuple._2));
+//		resultRDD.foreach(  -> 	System.out.println(tuple._1 + "\t" + tuple._2));
 //		resultRDD.cache();
 //		JavaPairRDD<String,Object> resultRDD = sc.textFile("").;
 //		resultRDD.saveAsTextFile("");

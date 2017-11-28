@@ -369,7 +369,7 @@ public class TaggerUtil implements Runnable{
 	}
 
 	public static Document doSimpleTagByIndexUsingDB(String docString) throws Exception {
-		log.info("start tagging ");
+		log.info(Thread.currentThread().getId() + " start tagging " + docString);
 		String taggingDBName = ConstResource.KG;
 		MongoCollection<Document> col = kgClient.getDatabase(taggingDBName).getCollection("parent_son");
 		String[] taggingField = ConstResource.FIELDS.split(",");

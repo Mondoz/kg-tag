@@ -19,7 +19,7 @@ public class SparkRunner {
 				;
 		JavaSparkContext sc = new JavaSparkContext(conf);
 
-        JavaRDD<Document> resultRDD = sc.textFile(args[0],4).repartition(10)
+        JavaRDD<Document> resultRDD = sc.textFile(args[0],10).repartition(10)
                 .map(doc -> {
                     Document resultDoc = TaggerUtil.doSimpleTagByIndexUsingDB(doc);
                     return resultDoc;

@@ -368,7 +368,7 @@ public class TaggerUtil implements Runnable{
 		}
 	}
 
-	public static Document doSimpleTagByIndexUsingDB(String docString) throws Exception {
+	public static JSONObject doSimpleTagByIndexUsingDB(String docString) throws Exception {
 		log.info(Thread.currentThread().getId() + " start tagging " + docString);
 		String taggingDBName = ConstResource.KG;
 		MongoCollection<Document> col = kgClient.getDatabase(taggingDBName).getCollection("parent_son");
@@ -392,7 +392,7 @@ public class TaggerUtil implements Runnable{
 		String text = input;
 		List<TaggingItem> taggingList = new ArrayList<TaggingItem>();
 		List<TaggingItem> parentTaggingList = new ArrayList<TaggingItem>();
-		Document resultDoc = new Document();
+		JSONObject jsonObject = new JSONObject();
 		try{
 			long t0 = System.currentTimeMillis();
 			Map<String, List<TaggingItem>> tagResultMap = getTagProcess(taggingDBName, text, conceptSonList, entitySonList, level);
@@ -406,28 +406,28 @@ public class TaggerUtil implements Runnable{
 					if (key.equals("content")) {
 						List<String> contentList = new ArrayList<String>();
 						contentList = ContentFilter.getSplitContent(doc.get("content").toString());
-						resultDoc.put(mapFields.get(key), contentList);
+						jsonObject.put(mapFields.get(key), contentList);
 					} else {
-						resultDoc.put(mapFields.get(key), doc.get(key) != null ? doc.get(key) : "");
+						jsonObject.put(mapFields.get(key), doc.get(key) != null ? doc.get(key) : "");
 					}
 				}
 			}
 			if (taggingList.size() > 0) {
-				resultDoc.put("annotation_tag", JSON.toJSONString(taggingList));
+				jsonObject.put("annotation_tag", JSON.toJSONString(taggingList));
 			} else {
-				resultDoc.put("annotation_tag", new ArrayList<>());
+				jsonObject.put("annotation_tag", new ArrayList<>());
 			}
 
 			if (parentTaggingList.size() > 0) {
-				resultDoc.put("parent_annotation_tag", JSON.toJSONString(parentTaggingList));
+				jsonObject.put("parent_annotation_tag", JSON.toJSONString(parentTaggingList));
 			} else {
-				resultDoc.put("parent_annotation_tag", new ArrayList<>());
+				jsonObject.put("parent_annotation_tag", new ArrayList<>());
 			}
 		} catch (Exception e) {
 			log.error(e);
 			throw e;
 		}
-		return resultDoc;
+		return jsonObject;
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })

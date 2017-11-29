@@ -368,19 +368,19 @@ public class TaggerUtil implements Runnable{
 		}
 	}
 
-	public static Document doSimpleTagByIndexUsingDB(String docString) throws Exception {
-		log.info(Thread.currentThread().getId() + " start tagging " + docString);
+	public static JSONObject doSimpleTagByIndexUsingDB(String docString) throws Exception {
+//		log.info(Thread.currentThread().getId() + " start tagging " + docString);
+		long t1 = System.currentTimeMillis();
 		String taggingDBName = ConstResource.KG;
 		MongoCollection<Document> col = kgClient.getDatabase(taggingDBName).getCollection("parent_son");
 		String[] taggingField = ConstResource.FIELDS.split(",");
 		List<Long> entitySonList = new ArrayList<Long>();
-		entitySonList.addAll(findAllSon(col, 5L));
+		ConstResource.INSTANCELIST.forEach(instance -> entitySonList.addAll(findAllSon(col, instance)));
 		List<Long> conceptSonList = new ArrayList<Long>();
-		conceptSonList.addAll(findAllSon(col, 5L));
+		ConstResource.CONCEPTLIST.forEach(concept -> conceptSonList.addAll(findAllSon(col, concept)));
 		int level = 0;
 		JSONObject doc = JSONObject.parseObject(docString);
 		Map<String,String> mapFields = reverseMap(ConstResource.MAPFIELDS);
-		String docId = doc.get("_id").toString();
 		String input = "";
 		for (String field : taggingField) {
 			if (doc.containsKey(field)) {
@@ -393,18 +393,12 @@ public class TaggerUtil implements Runnable{
 		String text = input;
 		List<TaggingItem> taggingList = new ArrayList<TaggingItem>();
 		List<TaggingItem> parentTaggingList = new ArrayList<TaggingItem>();
-		List<TaggingItem> fparentTaggingList = new ArrayList<TaggingItem>();
-		List<TaggingItem> sparentTaggingList = new ArrayList<TaggingItem>();
-		List<TaggingItem> tparentTaggingList = new ArrayList<TaggingItem>();
-		Document resultDoc = new Document();
+		JSONObject jsonObject = new JSONObject();
 		try{
 			long t0 = System.currentTimeMillis();
 			Map<String, List<TaggingItem>> tagResultMap = getTagProcess(taggingDBName, text, conceptSonList, entitySonList, level);
 			taggingList = tagResultMap.get("tagging");
 			parentTaggingList = tagResultMap.get("taggingParent");
-			fparentTaggingList = tagResultMap.get("ftaggingParent");
-			sparentTaggingList = tagResultMap.get("staggingParent");
-			tparentTaggingList = tagResultMap.get("ttaggingParent");
 //			log.info("process using " + (System.currentTimeMillis() - t0) + "\t" +System.currentTimeMillis());
 			//insert
 			//mongo 插入
@@ -413,43 +407,29 @@ public class TaggerUtil implements Runnable{
 					if (key.equals("content")) {
 						List<String> contentList = new ArrayList<String>();
 						contentList = ContentFilter.getSplitContent(doc.get("content").toString());
-						resultDoc.put(mapFields.get(key), contentList);
+						jsonObject.put(mapFields.get(key), contentList);
 					} else {
-						resultDoc.put(mapFields.get(key), doc.get(key) != null ? doc.get(key) : "");
+						jsonObject.put(mapFields.get(key), doc.get(key) != null ? doc.get(key) : "");
 					}
 				}
 			}
 			if (taggingList.size() > 0) {
-				resultDoc.put("annotation_tag", JSON.toJSONString(taggingList));
+				jsonObject.put("annotation_tag", JSON.toJSONString(taggingList));
 			} else {
-				resultDoc.put("annotation_tag", new ArrayList<>());
+				jsonObject.put("annotation_tag", new ArrayList<>());
 			}
 
 			if (parentTaggingList.size() > 0) {
-				resultDoc.put("parent_annotation_tag", JSON.toJSONString(parentTaggingList));
+				jsonObject.put("parent_annotation_tag", JSON.toJSONString(parentTaggingList));
 			} else {
-				resultDoc.put("parent_annotation_tag", new ArrayList<>());
-			}
-			if (parentTaggingList.size() > 0) {
-				resultDoc.put("annotation_1", JSON.toJSONString(fparentTaggingList));
-			} else {
-				resultDoc.put("annotation_1", new ArrayList<>());
-			}
-			if (parentTaggingList.size() > 0) {
-				resultDoc.put("annotation_2", JSON.toJSONString(sparentTaggingList));
-			} else {
-				resultDoc.put("annotation_2", new ArrayList<>());
-			}
-			if (parentTaggingList.size() > 0) {
-				resultDoc.put("annotation_3", JSON.toJSONString(tparentTaggingList));
-			} else {
-				resultDoc.put("annotation_3", new ArrayList<>());
+				jsonObject.put("parent_annotation_tag", new ArrayList<>());
 			}
 		} catch (Exception e) {
 			log.error(e);
 			throw e;
 		}
-		return resultDoc;
+		log.info(Thread.currentThread().getId() + "process using " + (System.currentTimeMillis() - t1));
+		return jsonObject;
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })

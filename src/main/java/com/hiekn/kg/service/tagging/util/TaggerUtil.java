@@ -380,7 +380,6 @@ public class TaggerUtil implements Runnable{
 		int level = 0;
 		JSONObject doc = JSONObject.parseObject(docString);
 		Map<String,String> mapFields = reverseMap(ConstResource.MAPFIELDS);
-		String docId = doc.get("_id").toString();
 		String input = "";
 		for (String field : taggingField) {
 			if (doc.containsKey(field)) {
@@ -393,18 +392,12 @@ public class TaggerUtil implements Runnable{
 		String text = input;
 		List<TaggingItem> taggingList = new ArrayList<TaggingItem>();
 		List<TaggingItem> parentTaggingList = new ArrayList<TaggingItem>();
-		List<TaggingItem> fparentTaggingList = new ArrayList<TaggingItem>();
-		List<TaggingItem> sparentTaggingList = new ArrayList<TaggingItem>();
-		List<TaggingItem> tparentTaggingList = new ArrayList<TaggingItem>();
 		Document resultDoc = new Document();
 		try{
 			long t0 = System.currentTimeMillis();
 			Map<String, List<TaggingItem>> tagResultMap = getTagProcess(taggingDBName, text, conceptSonList, entitySonList, level);
 			taggingList = tagResultMap.get("tagging");
 			parentTaggingList = tagResultMap.get("taggingParent");
-			fparentTaggingList = tagResultMap.get("ftaggingParent");
-			sparentTaggingList = tagResultMap.get("staggingParent");
-			tparentTaggingList = tagResultMap.get("ttaggingParent");
 //			log.info("process using " + (System.currentTimeMillis() - t0) + "\t" +System.currentTimeMillis());
 			//insert
 			//mongo 插入
@@ -429,21 +422,6 @@ public class TaggerUtil implements Runnable{
 				resultDoc.put("parent_annotation_tag", JSON.toJSONString(parentTaggingList));
 			} else {
 				resultDoc.put("parent_annotation_tag", new ArrayList<>());
-			}
-			if (parentTaggingList.size() > 0) {
-				resultDoc.put("annotation_1", JSON.toJSONString(fparentTaggingList));
-			} else {
-				resultDoc.put("annotation_1", new ArrayList<>());
-			}
-			if (parentTaggingList.size() > 0) {
-				resultDoc.put("annotation_2", JSON.toJSONString(sparentTaggingList));
-			} else {
-				resultDoc.put("annotation_2", new ArrayList<>());
-			}
-			if (parentTaggingList.size() > 0) {
-				resultDoc.put("annotation_3", JSON.toJSONString(tparentTaggingList));
-			} else {
-				resultDoc.put("annotation_3", new ArrayList<>());
 			}
 		} catch (Exception e) {
 			log.error(e);

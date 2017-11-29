@@ -374,9 +374,9 @@ public class TaggerUtil implements Runnable{
 		MongoCollection<Document> col = kgClient.getDatabase(taggingDBName).getCollection("parent_son");
 		String[] taggingField = ConstResource.FIELDS.split(",");
 		List<Long> entitySonList = new ArrayList<Long>();
-		entitySonList.addAll(findAllSon(col, 5L));
+		ConstResource.INSTANCELIST.forEach(instance -> entitySonList.addAll(findAllSon(col, instance)));
 		List<Long> conceptSonList = new ArrayList<Long>();
-		conceptSonList.addAll(findAllSon(col, 5L));
+		ConstResource.CONCEPTLIST.forEach(concept -> conceptSonList.addAll(findAllSon(col, concept)));
 		int level = 0;
 		JSONObject doc = JSONObject.parseObject(docString);
 		Map<String,String> mapFields = reverseMap(ConstResource.MAPFIELDS);

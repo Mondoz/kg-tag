@@ -15,8 +15,7 @@ public class SparkRunner {
 
 	public static void sparkConnect(String[] args) {
 		SparkConf conf = new SparkConf()
-				.setAppName("text_file")
-				;
+				.setAppName("text_file");
 		JavaSparkContext sc = new JavaSparkContext(conf);
 
         JavaRDD<Document> resultRDD = sc.textFile(args[0],10).repartition(10)

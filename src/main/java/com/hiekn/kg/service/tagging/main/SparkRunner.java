@@ -1,5 +1,6 @@
 package com.hiekn.kg.service.tagging.main;
 
+import com.alibaba.fastjson.JSONObject;
 import com.hiekn.kg.service.tagging.util.TaggerUtil;
 import com.mongodb.spark.api.java.MongoSpark;
 import com.mongodb.spark.rdd.api.java.JavaMongoRDD;
@@ -18,9 +19,9 @@ public class SparkRunner {
 				.setAppName("text_file");
 		JavaSparkContext sc = new JavaSparkContext(conf);
 
-        JavaRDD<Document> resultRDD = sc.textFile(args[0],10).repartition(10)
+        JavaRDD<JSONObject> resultRDD = sc.textFile(args[0],10).repartition(10)
                 .map(doc -> {
-                    Document resultDoc = TaggerUtil.doSimpleTagByIndexUsingDB(doc);
+                    JSONObject resultDoc = TaggerUtil.doSimpleTagByIndexUsingDB(doc);
                     return resultDoc;
 		});
 		resultRDD.coalesce(1).saveAsTextFile(args[1]);

@@ -477,37 +477,6 @@ public class TaggerUtil implements Runnable{
 				item.setScore(idMap.get(id) * baseScore);
 				item.setClassId(nameMap.get(name));
 				tempItemList.add(item);
-				if (classConceptMap.get(1).keySet().contains(id)) {
-					if (!fset.contains(id)) {
-						ftaggingList.add(new TaggingItem(id, classConceptMap.get(1).get(id),getConceptById(id)));
-						fset.add(id);
-					} 
-				} else if (classConceptMap.get(2).keySet().contains(id)) {
-					if (!sset.contains(id)) {
-						staggingList.add(new TaggingItem(id, classConceptMap.get(2).get(id),getConceptById(id)));
-						sset.add(id);
-					}
-					long fid = getConceptById(id);
-					if (!fset.contains(fid)) {
-						ftaggingList.add(new TaggingItem(fid, classConceptMap.get(1).get(fid),getConceptById(fid)));
-						fset.add(id);
-					} 
-				} else if (classConceptMap.get(3).keySet().contains(id)) {
-					if (!tset.contains(id)) {
-						ttaggingList.add(new TaggingItem(id, classConceptMap.get(3).get(id),getConceptById(id)));
-						tset.add(id);
-					}
-					long sid = getConceptById(id);
-					if (!sset.contains(sid)) {
-						staggingList.add(new TaggingItem(sid, classConceptMap.get(2).get(sid),getConceptById(sid)));
-						sset.add(sid);
-					} 
-					long fid = getConceptById(getConceptById(id));
-					if (!fset.contains(fid)) {
-						ftaggingList.add(new TaggingItem(fid, classConceptMap.get(1).get(fid),getConceptById(fid)));
-						fset.add(id);
-					} 
-				}
 			}
 			if (level == 0) {
 				taggingList.addAll(tempItemList);

@@ -3,7 +3,10 @@ package com.hiekn.kg.service.tagging.util;
 import com.google.common.collect.Maps;
 import com.hiekn.kg.service.tagging.mongo.KGMongoSingleton;
 import com.mongodb.*;
+import com.mongodb.client.MongoCollection;
+import com.sun.xml.bind.v2.runtime.reflect.opt.Const;
 import org.apache.log4j.Logger;
+import org.bson.Document;
 import org.elasticsearch.common.collect.Lists;
 
 import java.util.*;
@@ -172,6 +175,17 @@ public class SemanticSegUtil {
 		return count;
 	}
 	
+	public static void main(String[] args) {
+
+		MongoCollection<Document> col = kgClient.getDatabase(ConstResource.KG).getCollection("parent_son");
+		List<Long> entitySonList = new ArrayList<Long>();
+		ConstResource.INSTANCELIST.forEach(instance -> entitySonList.addAll(TaggerUtil.findAllSon(col, instance)));
+		List<Long> conceptSonList = new ArrayList<Long>();
+		ConstResource.CONCEPTLIST.forEach(concept -> conceptSonList.addAll(TaggerUtil.findAllSon(col, concept)));
+	    initKgWordMap(ConstResource.KG,entitySonList,conceptSonList);
+	    kgWordMap.get(ConstResource.KG).forEach(d -> System.out.println(d.get("name").toString()));
+	}
+
 	private static void initKgWordMap(String kgName, List<Long> entityList, List<Long> conceptList) {
 		long t1 = System.currentTimeMillis();
 		BasicDBList searchList = new BasicDBList();

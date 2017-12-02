@@ -2,9 +2,6 @@ package com.hiekn.kg.service.tagging.service;
 
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.Lists;
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.hiekn.kg.service.tagging.util.BufferedReaderUtil;
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;

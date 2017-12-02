@@ -71,7 +71,12 @@ public class SparkRunner {
 							}
 						}
 						if (taggingList.size() > 0) {
-							jsonObject.put("annotation_tag", taggingList);
+							if (docObj.containsKey("annotation_tag")) {
+								taggingList.addAll(docObj.getObject("annotation_tag",List.class));
+								jsonObject.put("annotation_tag", taggingList);
+							} else {
+								jsonObject.put("annotation_tag", taggingList);
+							}
 						} else {
 							jsonObject.put("annotation_tag", new ArrayList<>());
 						}

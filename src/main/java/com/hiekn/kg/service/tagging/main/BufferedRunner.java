@@ -153,7 +153,12 @@ class LocalReader implements Runnable {
 							}
 						}
 						if (taggingList.size() > 0) {
-							jsonObject.put("annotation_tag", taggingList);
+							if (doc.containsKey("annotation_tag")) {
+								taggingList.addAll(doc.getObject("annotation_tag",List.class));
+								jsonObject.put("annotation_tag", taggingList);
+							} else {
+								jsonObject.put("annotation_tag", taggingList);
+							}
 						} else {
 							jsonObject.put("annotation_tag", new ArrayList<>());
 						}

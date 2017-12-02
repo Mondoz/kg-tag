@@ -25,16 +25,22 @@ public class AnsjUtil {
 		Set<String> set = new HashSet<String>();
 		DicLibrary.clear(DicLibrary.DEFAULT);
 		try {
-			for (String string : word) {
-				DicLibrary.insert(DicLibrary.DEFAULT, string);
+			if (word.size() > 0) {
+				for (String string : word) {
+					DicLibrary.insert(DicLibrary.DEFAULT, string);
+				}
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
+//			e.printStackTrace();
 		}
 		Result parser = ToAnalysis.parse(input);
 		for (Term term : parser) {
 			set.add(term.getName().toLowerCase());
 		}
 		return set;
+	}
+
+	public static Set<String> getAnsjWord(String input,Set<String> word,boolean use) {
+		return word;
 	}
 }

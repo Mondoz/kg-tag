@@ -45,7 +45,8 @@ public class ConstResource {
 	//thread
 	public static final Integer THREADCOUNT = Integer.parseInt(props.getProperty("threads", "8"));
 	public static final Integer DOCCOUNT = Integer.parseInt(props.getProperty("doc_count", "0"));
-	
+	public static final Integer BULK = Integer.parseInt(props.getProperty("bulk", "1000"));
+
 	//mongo
 	public static final String MONGOURL = props.getProperty("mongodb_url");
 	public static final Integer MONGOPORT = Integer.parseInt(props.getProperty("mongodb_port", "27017"));

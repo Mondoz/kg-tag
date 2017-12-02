@@ -169,9 +169,9 @@ public class TaggerUtil implements Runnable{
 		DBCollection col = kgClient.getDB(taggingDBName).getCollection("parent_son");
 		String[] taggingField = ConstResource.FIELDS.split(",");
 		List<Long> entitySonList = new ArrayList<Long>();
-		entitySonList.addAll(findAllSon(col, 5L));
+		ConstResource.INSTANCELIST.forEach(instance -> entitySonList.addAll(findAllSon(col, instance)));
 		List<Long> conceptSonList = new ArrayList<Long>();
-		conceptSonList.addAll(findAllSon(col, 5L));
+		ConstResource.CONCEPTLIST.forEach(concept -> conceptSonList.addAll(findAllSon(col, concept)));
 		int level = 0;
 		Map<String,String> mapFields = reverseMap(ConstResource.MAPFIELDS);
 
@@ -369,7 +369,8 @@ public class TaggerUtil implements Runnable{
 	}
 
 	public static JSONObject doSimpleTagByIndexUsingDB(String docString) throws Exception {
-		log.info(Thread.currentThread().getId() + " start tagging " + docString);
+//		log.info(Thread.currentThread().getId() + " start tagging " + docString);
+		long t1 = System.currentTimeMillis();
 		String taggingDBName = ConstResource.KG;
 		MongoCollection<Document> col = kgClient.getDatabase(taggingDBName).getCollection("parent_son");
 		String[] taggingField = ConstResource.FIELDS.split(",");
@@ -413,13 +414,13 @@ public class TaggerUtil implements Runnable{
 				}
 			}
 			if (taggingList.size() > 0) {
-				jsonObject.put("annotation_tag", JSON.toJSONString(taggingList));
+				jsonObject.put("annotation_tag", taggingList);
 			} else {
 				jsonObject.put("annotation_tag", new ArrayList<>());
 			}
 
 			if (parentTaggingList.size() > 0) {
-				jsonObject.put("parent_annotation_tag", JSON.toJSONString(parentTaggingList));
+				jsonObject.put("parent_annotation_tag", parentTaggingList);
 			} else {
 				jsonObject.put("parent_annotation_tag", new ArrayList<>());
 			}
@@ -427,11 +428,12 @@ public class TaggerUtil implements Runnable{
 			log.error(e);
 			throw e;
 		}
+		log.info(Thread.currentThread().getId() + " process using " + (System.currentTimeMillis() - t1));
 		return jsonObject;
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	private static Map<String,List<TaggingItem>> getTagProcess(String taggingDBName, String text, List<Long> conceptSonList, List<Long> entitySonList, int level) {
+	public static Map<String,List<TaggingItem>> getTagProcess(String taggingDBName, String text, List<Long> conceptSonList, List<Long> entitySonList, int level) {
 		Map<String,List<TaggingItem>> taggingResultMap = Maps.newHashMap();
 		List<TaggingItem> taggingList = Lists.newArrayList();
 		List<TaggingItem> ftaggingList = Lists.newArrayList();
@@ -442,7 +444,7 @@ public class TaggerUtil implements Runnable{
 		Set<Long> tset = new HashSet<Long>();
 		List<TaggingItem> parentTaggingList = Lists.newArrayList();
 		Map<String, Map<String,Object>> map = SemanticSegUtil.segByDbIndex(taggingDBName, text,conceptSonList,entitySonList);
-		Set<String> ansjWord = AnsjUtil.getAnsjWord(text, map.keySet());
+		Set<String> ansjWord = AnsjUtil.getAnsjWord(text, map.keySet(),false);
 		Map<Long, Integer> idMap = new HashMap<Long, Integer>();
 		
 		double baseScore = 1 / Math.sqrt(text.length());
@@ -683,7 +685,7 @@ public class TaggerUtil implements Runnable{
 		return sonList;
 	}
 
-	private static Map<String,String> reverseMap(String str) {
+	public static Map<String,String> reverseMap(String str) {
 		Map<String,String> originMap = JSON.parseObject(str, Map.class);
 		Map<String,String> map = new HashMap<String,String>();
 		for (Entry<String,String> entry : originMap.entrySet()) {

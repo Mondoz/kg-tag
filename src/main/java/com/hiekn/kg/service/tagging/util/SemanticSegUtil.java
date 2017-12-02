@@ -98,7 +98,7 @@ public class SemanticSegUtil {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-//		log.info("seg using " + (System.currentTimeMillis() - t0));
+		log.info("seg using " + (System.currentTimeMillis() - t0));
 		return dataMap;
 	}
 	

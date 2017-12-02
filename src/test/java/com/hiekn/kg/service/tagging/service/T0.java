@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import com.hiekn.kg.service.tagging.util.ConstResource;
 import org.apache.log4j.Logger;
 import org.bson.Document;
 
@@ -35,13 +36,10 @@ public class T0 {
 
 	@Test
 	public void t7() {
-		List<Long> list = Lists.newArrayList();
-		JSONArray arr = new JSONArray();
-		arr.add(9L);
-		String s = arr.toJSONString();
-		list = JSONArray.parseArray(s, Long.class);
-		System.out.println("aa");
-		
+		List<Long> list = ConstResource.CONCEPTLIST;
+		for (Long aLong : list) {
+			System.out.println(aLong);
+		}
 	}
 	
 	@Test

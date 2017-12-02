@@ -76,7 +76,7 @@ public class SemanticSegUtil {
 					long id = Long.valueOf(dbObj.get("id").toString());
 					long conceptId = dbObj.get("concept_id") == null ? -1 : Long.valueOf(dbObj.get("concept_id").toString());
 					if (word.length() > 1) {
-						int wordCount = getCount(text, word);
+						int wordCount = getCount(text, word,false);
 						if (wordCount == 0) continue;
 						if (dataMap.containsKey(word)) {
 							((List)dataMap.get(word).get("id")).add(id);
@@ -171,6 +171,14 @@ public class SemanticSegUtil {
 					}
 				}
 			}
+		}
+		return count;
+	}
+	private static int getCount(String input, String word,boolean bool) {
+		int count = 0;
+		int index = 0;
+		while ((index = input.indexOf(word,index)) != -1) {
+			count++;
 		}
 		return count;
 	}

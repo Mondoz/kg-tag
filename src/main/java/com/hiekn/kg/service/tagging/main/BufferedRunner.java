@@ -3,11 +3,10 @@ package com.hiekn.kg.service.tagging.main;
 import com.alibaba.fastjson.JSONObject;
 import com.hiekn.kg.service.tagging.bean.TaggingItem;
 import com.hiekn.kg.service.tagging.mongo.KGMongoSingleton;
-import com.hiekn.kg.service.tagging.util.ConstResource;
-import com.hiekn.kg.service.tagging.util.ContentFilter;
-import com.hiekn.kg.service.tagging.util.TaggerUtil;
+import com.hiekn.kg.service.tagging.util.*;
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
+import com.sun.xml.bind.v2.runtime.reflect.opt.Const;
 import org.apache.log4j.Logger;
 import org.bson.Document;
 import org.jsoup.Jsoup;
@@ -22,8 +21,8 @@ import java.util.concurrent.ThreadPoolExecutor;
 
 public class BufferedRunner {
 
+	static MongoClient kgClient = KGMongoSingleton.getInstance().getMongoClient();
 	static Logger log = Logger.getLogger(BufferedRunner.class);
-
 	public static void main(String[] args) {
 		java.util.logging.Logger.getLogger("org.mongodb.driver").setLevel(java.util.logging.Level.SEVERE);
 		try {
@@ -32,12 +31,21 @@ public class BufferedRunner {
 //			String outputPath = "data/paper";
 //			String filePath = "data/paper_with_id.txt";
 			String outputPath = "data/patent";
-			String filePath = "data/patent_with_id.txt";
+			String filePath = "data/patent.txt";
 			int allCount = getCount(filePath);
 			log.info("get count" + allCount);
 			int threads = ConstResource.THREADCOUNT;
 			CountDownLatch latch = new CountDownLatch(threads);
 			ThreadPoolExecutor pool = (ThreadPoolExecutor) Executors.newFixedThreadPool(threads);
+
+			String taggingDBName = ConstResource.KG;
+			MongoCollection<Document> col = kgClient.getDatabase(taggingDBName).getCollection("parent_son");
+			List<Long> entitySonList = new ArrayList<Long>();
+			ConstResource.INSTANCELIST.forEach(instance -> entitySonList.addAll(TaggerUtil.findAllSon(col, instance)));
+			List<Long> conceptSonList = new ArrayList<Long>();
+			ConstResource.CONCEPTLIST.forEach(concept -> conceptSonList.addAll(TaggerUtil.findAllSon(col, concept)));
+			SemanticSegUtil.segInit(entitySonList,conceptSonList);
+			AnsjUtil.init(taggingDBName);
 			int limit = allCount / threads;
 			for (int i = 0; i < threads; i++) {
 				if (i == threads-1) {
@@ -79,7 +87,6 @@ public class BufferedRunner {
 class LocalReader implements Runnable {
 
 	static Logger log = Logger.getLogger(LocalReader.class);
-	static MongoClient kgClient = KGMongoSingleton.getInstance().getMongoClient();
 
 	private int skip;
 	private int limit;
@@ -109,13 +116,7 @@ class LocalReader implements Runnable {
 			int ccount = 0;
 			int bulk = ConstResource.BULK;
 			StringBuffer sb = new StringBuffer();
-			String taggingDBName = ConstResource.KG;
-			MongoCollection<Document> col = kgClient.getDatabase(taggingDBName).getCollection("parent_son");
 			String[] taggingField = ConstResource.FIELDS.split(",");
-			List<Long> entitySonList = new ArrayList<Long>();
-			ConstResource.INSTANCELIST.forEach(instance -> entitySonList.addAll(TaggerUtil.findAllSon(col, instance)));
-			List<Long> conceptSonList = new ArrayList<Long>();
-			ConstResource.CONCEPTLIST.forEach(concept -> conceptSonList.addAll(TaggerUtil.findAllSon(col, concept)));
 			int level = 0;
 			while ((input = br.readLine())!=null) {
 				long t1 = System.currentTimeMillis();
@@ -138,7 +139,8 @@ class LocalReader implements Runnable {
 					List<TaggingItem> parentTaggingList;
 					JSONObject jsonObject;
 					try{
-						Map<String, List<TaggingItem>> tagResultMap = TaggerUtil.getTagProcess(taggingDBName, text, conceptSonList, entitySonList, level);
+//						Map<String, List<TaggingItem>> tagResultMap = TaggerUtil.getTagProcess(taggingDBName, text, conceptSonList, entitySonList, level);
+						Map<String, List<TaggingItem>> tagResultMap = SemanticSegUtil.ansjSeg(ConstResource.KG, text);
 						taggingList = tagResultMap.get("tagging");
 						parentTaggingList = tagResultMap.get("taggingParent");
 						jsonObject = doc;

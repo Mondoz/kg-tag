@@ -3,9 +3,7 @@ package com.hiekn.kg.service.tagging.main;
 import com.alibaba.fastjson.JSONObject;
 import com.hiekn.kg.service.tagging.bean.TaggingItem;
 import com.hiekn.kg.service.tagging.mongo.KGMongoSingleton;
-import com.hiekn.kg.service.tagging.util.ConstResource;
-import com.hiekn.kg.service.tagging.util.ContentFilter;
-import com.hiekn.kg.service.tagging.util.TaggerUtil;
+import com.hiekn.kg.service.tagging.util.*;
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
 import org.apache.spark.SparkConf;
@@ -38,7 +36,8 @@ public class SparkRunner {
 		ConstResource.INSTANCELIST.forEach(instance -> entitySonList.addAll(TaggerUtil.findAllSon(col, instance)));
 		List<Long> conceptSonList = new ArrayList<Long>();
 		ConstResource.CONCEPTLIST.forEach(concept -> conceptSonList.addAll(TaggerUtil.findAllSon(col, concept)));
-
+		SemanticSegUtil.segInit(entitySonList,conceptSonList);
+		AnsjUtil.init(taggingDBName);
 		JavaRDD<JSONObject> resultRDD = sc.textFile(args[0])
                 .map(doc -> {
 					JSONObject docObj = JSONObject.parseObject(doc);
@@ -56,7 +55,7 @@ public class SparkRunner {
 					List<TaggingItem> parentTaggingList;
 					JSONObject jsonObject = new JSONObject();
 					try{
-						Map<String, List<TaggingItem>> tagResultMap = TaggerUtil.getTagProcess(taggingDBName, text, conceptSonList, entitySonList, 0);
+						Map<String, List<TaggingItem>> tagResultMap = SemanticSegUtil.ansjSeg(taggingDBName, text);
 						taggingList = tagResultMap.get("tagging");
 						parentTaggingList = tagResultMap.get("taggingParent");
 						for (String key : docObj.keySet()) {
@@ -88,14 +87,14 @@ public class SparkRunner {
 					} catch (Exception e) {
 						throw e;
 					}
-					jsonObject.put("thread",Thread.currentThread().getId());
-					InetAddress addr = InetAddress.getLocalHost();
-					String ip = addr.getHostAddress().toString();
-					jsonObject.put("ip",ip);
+//					jsonObject.put("thread",Thread.currentThread().getId());
+//					InetAddress addr = InetAddress.getLocalHost();
+//					String ip = addr.getHostAddress().toString();
+//					jsonObject.put("ip",ip);
                     return jsonObject;
 		});
         
-		resultRDD.saveAsTextFile(args[1]);
+		resultRDD.coalesce(1).saveAsTextFile(args[1]);
 	}
 
 

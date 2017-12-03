@@ -16,6 +16,9 @@ public class TaggingItem implements java.io.Serializable {
 	private double score;
 	private long classId;
 	private Set<String> refs;
+
+	public TaggingItem() {
+	}
 	
 	public TaggingItem(long id, String name) {
 		this.id = id;

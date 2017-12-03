@@ -7,9 +7,7 @@ import com.hiekn.kg.service.tagging.util.ConstResource;
 import com.hiekn.kg.service.tagging.util.ContentFilter;
 import com.hiekn.kg.service.tagging.util.TaggerUtil;
 import com.mongodb.MongoClient;
-import com.mongodb.Tag;
 import com.mongodb.client.MongoCollection;
-import org.apache.hadoop.hdfs.server.namenode.snapshot.FileWithSnapshot;
 import org.apache.log4j.Logger;
 import org.bson.Document;
 import org.jsoup.Jsoup;
@@ -25,13 +23,16 @@ import java.util.concurrent.ThreadPoolExecutor;
 public class BufferedRunner {
 
 	static Logger log = Logger.getLogger(BufferedRunner.class);
+
 	public static void main(String[] args) {
+		java.util.logging.Logger.getLogger("org.mongodb.driver").setLevel(java.util.logging.Level.SEVERE);
 		try {
 //			String filePath = args[0];
 //			String outputPath = args[1];
+//			String outputPath = "data/paper";
+//			String filePath = "data/paper_with_id.txt";
 			String outputPath = "data/patent";
-//			String filePath = "data/patent_with_id.txt";
-			String filePath = "data/a.txt";
+			String filePath = "data/patent_with_id.txt";
 			int allCount = getCount(filePath);
 			log.info("get count" + allCount);
 			int threads = ConstResource.THREADCOUNT;
@@ -118,7 +119,6 @@ class LocalReader implements Runnable {
 			int level = 0;
 			while ((input = br.readLine())!=null) {
 				long t1 = System.currentTimeMillis();
-//				log.info("is running");
 				if (count++ < skip) continue;
 				if (count > skip + limit) break;
 				ccount++;
@@ -136,26 +136,17 @@ class LocalReader implements Runnable {
 					String text = input;
 					List<TaggingItem> taggingList;
 					List<TaggingItem> parentTaggingList;
-					JSONObject jsonObject = new JSONObject();
+					JSONObject jsonObject;
 					try{
 						Map<String, List<TaggingItem>> tagResultMap = TaggerUtil.getTagProcess(taggingDBName, text, conceptSonList, entitySonList, level);
 						taggingList = tagResultMap.get("tagging");
 						parentTaggingList = tagResultMap.get("taggingParent");
-						for (String key : doc.keySet()) {
-							if (mapFields.containsKey(key)) {
-								if (key.equals("content")) {
-									List<String> contentList = new ArrayList<String>();
-									contentList = ContentFilter.getSplitContent(doc.get("content").toString());
-									jsonObject.put(mapFields.get(key), contentList);
-								} else {
-									jsonObject.put(mapFields.get(key), doc.get(key) != null ? doc.get(key) : "");
-								}
-							}
-						}
+						jsonObject = doc;
 						if (taggingList.size() > 0) {
-							if (doc.containsKey("annotation_tag")) {
-								taggingList.addAll(doc.getObject("annotation_tag",List.class));
+							if (doc.containsKey("kg_ents")) {
+								taggingList.addAll(doc.getObject("kg_ents",List.class));
 								jsonObject.put("annotation_tag", taggingList);
+								jsonObject.remove("kg_ents");
 							} else {
 								jsonObject.put("annotation_tag", taggingList);
 							}
@@ -181,6 +172,8 @@ class LocalReader implements Runnable {
 						sb = new StringBuffer();
 					}
 				} catch (Exception e) {
+					sb.append(input);
+					System.out.println(input);
 				    e.printStackTrace();
 				}
 			}

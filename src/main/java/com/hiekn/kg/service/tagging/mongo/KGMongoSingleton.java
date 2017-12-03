@@ -2,25 +2,24 @@ package com.hiekn.kg.service.tagging.mongo;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
 
 import com.hiekn.kg.service.tagging.util.ConstResource;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientOptions;
 import com.mongodb.MongoCredential;
 import com.mongodb.ServerAddress;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 
 /**
- * 
  * 里面维护一个MongoClient
- * 
- * @author pzn
  *
+ * @author pzn
  */
 public class KGMongoSingleton {
-	
+
 	/**
 	 * log
 	 */
@@ -39,9 +38,9 @@ public class KGMongoSingleton {
 	 * mongo 重连次数
 	 */
 	private static final int MONGO_RETRY_TIMES = 5;
-	
+
 	private volatile static KGMongoSingleton instance = new KGMongoSingleton();
-	
+
 	public static KGMongoSingleton getInstance() {
 		if (instance == null) {
 			synchronized (KGMongoSingleton.class) {
@@ -52,25 +51,24 @@ public class KGMongoSingleton {
 		}
 		return instance;
 	}
-	
+
 	private MongoClient mgClient = null;
-	
+
 	public KGMongoSingleton() {
 		if (!init(MONGO_RETRY_TIMES)) {
 			log.error("尝试 " + MONGO_RETRY_TIMES + " 次不能连上mongodb...");
 		}
 	}
-	
+
 	/**
-	 * 
 	 * 初始化mgClient、MongoDatabase、MongoCollection
-	 * 
+	 * <p>
 	 * 当设置tryTimes 大于 0  时，表示最大的尝试重连次数。如果尝试连接的次数
-	 * 
+	 * <p>
 	 * 等于tryTimes，还是不能成功初始化mgClient、MongoDatabase、MongoCollection.
-	 * 
+	 * <p>
 	 * 则会返回false，表示初始化失败，否则，返回true。
-	 * 
+	 *
 	 * @param tryTimes 连接失败时，尝试连接的最大次数.必须大于等于1，否则不会初始化mongo
 	 * @return false 初始化失败 , true 初始化成功
 	 */
@@ -84,11 +82,11 @@ public class KGMongoSingleton {
 			log.info("init mongo client ... start");
 			MongoClientOptions options = MongoClientOptions.builder()
 					.connectionsPerHost(20).minConnectionsPerHost(1)
-					.maxConnectionIdleTime(300000).maxConnectionLifeTime(180000)
+					.maxConnectionIdleTime(3000).maxConnectionLifeTime(180000)
 					.connectTimeout(10000).socketTimeout(120000).build();
 			MongoCredential credential = MongoCredential.createCredential(ConstResource.MONGOUSER,
-                    "admin",
-                    ConstResource.MONGOPASSWORD.toCharArray());
+					"admin",
+					ConstResource.MONGOPASSWORD.toCharArray());
 			String[] urls = MONGODB_URL.split(",");
 			List<ServerAddress> urlList = new ArrayList<ServerAddress>();
 			for (String url : urls) {
@@ -105,17 +103,16 @@ public class KGMongoSingleton {
 			return init(--tryTimes);//尝试重新连接
 		}
 	}
-	
+
 	/**
-	 * 
 	 * @return
 	 */
 	public MongoClient getMongoClient() {
 		return mgClient;
 	}
-	
+
 	/**
-	 * 
+	 *
 	 */
 	public void close() {
 		log.info("close mongo client ... start");
@@ -125,29 +122,29 @@ public class KGMongoSingleton {
 		}
 		log.info("close mongo client ... done");
 	}
-	
+
 	/**
-	 * 
-	 * 
+	 *
+	 *
 	 * db.sim_hash.aggregate(
 	 *  	[
-     * 			{
-     * 				$group : {
-     *     				_id : null,
-     *     				total: { $sum: "$simi_count"},
-     *     			count: { $sum: 1 }
-     *  			}
-     *			}
-   	 *		]
-     *	)  
-	 * 
-	 * 
-	 * 
-	 * 
-	 * 
-	 * 
-	 * 
-	 * 
-	 * 
+	 *            {
+	 * 				$group : {
+	 *     				_id : null,
+	 *     				total: { $sum: "$simi_count"},
+	 *     			count: { $sum: 1 }
+	 *            }
+	 *            }
+	 *		]
+	 *	)
+	 *
+	 *
+	 *
+	 *
+	 *
+	 *
+	 *
+	 *
+	 *
 	 */
 }

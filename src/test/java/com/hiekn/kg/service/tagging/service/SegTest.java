@@ -1,16 +1,41 @@
 package com.hiekn.kg.service.tagging.service;
 
+import java.io.BufferedReader;
+import java.nio.Buffer;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import com.alibaba.fastjson.JSONObject;
+import com.hiekn.kg.service.tagging.util.BufferedReaderUtil;
 import com.hiekn.kg.service.tagging.util.TaggerUtil;
 
 public class SegTest {
 	public static void main(String[] args) {
-		String go = "big data monetisation in telecoms[big data telecoms, business intelligence telecoms, data analytics telecoms]";
-		System.out.println(getCount2(go, "ge"));
+		try {
+			BufferedReader br = BufferedReaderUtil.getBuffer("data/kw.txt");
+			BufferedReader dbr = BufferedReaderUtil.getBuffer("data/patent_with_id.txt");
+			String input = "";
+			Set<String> set = new HashSet<>();
+			while ((input = br.readLine()) != null) {
+				set.add(input);
+			}
+			System.out.println("finish" + set.size());
+			while ((input = dbr.readLine())!=null) {
+				JSONObject obj = JSONObject.parseObject(input);
+				String st = obj.getString("title") + obj.getString("abstact");
+				long t1 = System.currentTimeMillis();
+				for (String s : set) {
+					if (!s.equals("")) {
+						getCount2(st, s);
+					}
+				}
+				System.out.println(System.currentTimeMillis() - t1);
+			}
+		} catch (Exception e) {
+		    e.printStackTrace();
+		}
 //		Set<String> set = new HashSet<String>();
 //		set.add("华联股份");
 //		set.add("华联");
@@ -60,46 +85,7 @@ public class SegTest {
 	private static int getCount2(String input, String word) {
 		int count = 0;
 		int index = 0;
-		while ((index = input.indexOf(word,index)) != -1) {
-			if (isChinese(word)) {
-				index = index + word.length();
-				count++;
-			} else {
-				if (index > 0) {
-					if (index + word.length() >= input.length()) {
-						char i = input.charAt(index-1);
-						if (!isEnglishCharactor(i)) {
-							index = index + word.length();
-							count++;
-						} else {
-							index = index + word.length();
-						}
-					} else {
-						char i = input.charAt(index-1);
-						char lastI = input.charAt(index+word.length());
-						if (!isEnglishCharactor(i) && !isEnglishCharactor(lastI)) {
-							index = index + word.length();
-							count++;
-						} else {
-							index = index + word.length();
-						}
-					}
-				} else {
-					if (index + word.length() >= input.length()) {
-						index = index + word.length();
-						count++;
-					} else {
-						char i = input.charAt(index+word.length());
-						if (!isEnglishCharactor(i)) {
-							index = index + word.length();
-							count++;
-						} else {
-							index = index + word.length();
-						}
-					}
-				}
-			}
-		}
+		if (input.contains(word)) return 1;
 		return count;
 	}
 	

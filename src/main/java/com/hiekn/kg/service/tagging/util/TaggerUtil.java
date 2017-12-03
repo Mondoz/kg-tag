@@ -428,25 +428,19 @@ public class TaggerUtil implements Runnable{
 			log.error(e);
 			throw e;
 		}
-		log.info(Thread.currentThread().getId() + " process using " + (System.currentTimeMillis() - t1));
 		return jsonObject;
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static Map<String,List<TaggingItem>> getTagProcess(String taggingDBName, String text, List<Long> conceptSonList, List<Long> entitySonList, int level) {
+		long t1 = System.currentTimeMillis();
+//		log.info("current thread " + Thread.currentThread().getName());
 		Map<String,List<TaggingItem>> taggingResultMap = Maps.newHashMap();
 		List<TaggingItem> taggingList = Lists.newArrayList();
-		List<TaggingItem> ftaggingList = Lists.newArrayList();
-		List<TaggingItem> staggingList = Lists.newArrayList();
-		List<TaggingItem> ttaggingList = Lists.newArrayList();
-		Set<Long> fset = new HashSet<Long>();
-		Set<Long> sset = new HashSet<Long>();
-		Set<Long> tset = new HashSet<Long>();
 		List<TaggingItem> parentTaggingList = Lists.newArrayList();
-		Map<String, Map<String,Object>> map = SemanticSegUtil.segByDbIndex(taggingDBName, text,conceptSonList,entitySonList);
-		Set<String> ansjWord = AnsjUtil.getAnsjWord(text, map.keySet(),false);
+		Map<String, ParentItemBean> map = SemanticSegUtil.segByDbIndex(taggingDBName, text,conceptSonList,entitySonList);
+		Set<String> ansjWord = AnsjUtil.getAnsjWord(text, map.keySet());
 		Map<Long, Integer> idMap = new HashMap<Long, Integer>();
-		
 		double baseScore = 1 / Math.sqrt(text.length());
 		Map<Long,Map<Long,String>> parentIdNameMap = new HashMap<Long, Map<Long,String>>();
 		for(String word : map.keySet()){
@@ -454,15 +448,15 @@ public class TaggerUtil implements Runnable{
 				if (!ansjWord.contains(word)) continue;
 			}
 			List<Long> idList = null;
-			List<Long> entityList = (List) map.get(word).get("id");
+			List<Long> entityList = map.get(word).getId();
 			if(entityList.size() > 0){
 				idList = entityList;
 			}
 			if(idList != null){
 				for(int i=0;i<idList.size();i++){
 					long id = idList.get(i);
-					parentIdNameMap.put(id, (Map<Long, String>) map.get(word).get("parent"));
-					idMap.put(id, idMap.containsKey(id) ? (Integer)map.get(word).get("count") + idMap.get(id) : (Integer)map.get(word).get("count"));
+					parentIdNameMap.put(id, map.get(word).getParentNameIdMap());
+					idMap.put(id, idMap.containsKey(id) ? map.get(word).getCount() + idMap.get(id) : map.get(word).getCount());
 				}
 			}
 		}
@@ -495,10 +489,7 @@ public class TaggerUtil implements Runnable{
 		
 		taggingResultMap.put("tagging", taggingList);
 		taggingResultMap.put("taggingParent", parentTaggingList);
-		taggingResultMap.put("ftaggingParent", ftaggingList);
-		taggingResultMap.put("staggingParent", staggingList);
-		taggingResultMap.put("ttaggingParent", ttaggingList);
-		
+
 		return taggingResultMap;
 	}
 	

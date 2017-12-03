@@ -37,8 +37,6 @@ public class DataProcess {
 //                        input = input.replaceAll("\\\\v","");
                         JSONObject obj = JSONObject.parseObject(input);
                         String id = obj.getString("_id");
-//                        JsonObject obj = new JsonParser().parse(input).getAsJsonObject();
-//                        String id = obj.get("_id").getAsString();
                         set.add(id);
                     } catch (Exception e) {
                         System.out.println(input);

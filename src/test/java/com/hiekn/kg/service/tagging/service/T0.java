@@ -1,5 +1,6 @@
 package com.hiekn.kg.service.tagging.service;
 
+import java.io.BufferedReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -8,6 +9,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import com.hiekn.kg.service.tagging.util.BufferedReaderUtil;
 import com.hiekn.kg.service.tagging.util.ConstResource;
 import org.apache.log4j.Logger;
 import org.bson.Document;
@@ -36,9 +38,17 @@ public class T0 {
 
 	@Test
 	public void t7() {
-		List<Long> list = ConstResource.CONCEPTLIST;
-		for (Long aLong : list) {
-			System.out.println(aLong);
+		try {
+			String input = "";
+			String str = "";
+			BufferedReader br = BufferedReaderUtil.getBuffer("data/test.txt");
+			while ((input = br.readLine()) != null) {
+				str = input;
+			}
+			JSONObject obj = JSONObject.parseObject(str);
+			System.out.println(JSON.toJSON(obj));
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 	}
 	

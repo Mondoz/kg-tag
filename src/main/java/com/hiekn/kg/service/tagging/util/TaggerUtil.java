@@ -442,7 +442,7 @@ public class TaggerUtil implements Runnable{
 		Set<String> ansjWord = AnsjUtil.getAnsjWord(text, map.keySet());
 		Map<Long, Integer> idMap = new HashMap<Long, Integer>();
 		double baseScore = 1 / Math.sqrt(text.length());
-		Map<Long,Map<Long,String>> parentIdNameMap = new HashMap<Long, Map<Long,String>>();
+		Map<Long,Map<Long,TaggingItem>> parentIdNameMap = new HashMap<Long, Map<Long,TaggingItem>>();
 		for(String word : map.keySet()){
 			if (isChinese(word)) {
 				if (!ansjWord.contains(word)) continue;
@@ -461,7 +461,7 @@ public class TaggerUtil implements Runnable{
 			}
 		}
 		
-		Map<Long,String> allParentMap = new HashMap<Long, String>();
+		Map<Long,TaggingItem> allParentMap = new HashMap<Long, TaggingItem>();
 		
 		for(long id : idMap.keySet()){
 			Map<String,Long> nameMap = getNameMapById(taggingDBName, id);
@@ -483,7 +483,7 @@ public class TaggerUtil implements Runnable{
 		}
 		
 		for (Long allParentKey : allParentMap.keySet()) {
-			TaggingItem item = new TaggingItem(allParentKey,allParentMap.get(allParentKey));
+			TaggingItem item = allParentMap.get(allParentKey);
 			parentTaggingList.add(item);
 		}
 		

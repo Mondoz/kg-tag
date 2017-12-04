@@ -9,6 +9,7 @@ import com.mongodb.client.MongoCollection;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.broadcast.Broadcast;
 import org.bson.Document;
 import org.jsoup.Jsoup;
 
@@ -25,10 +26,15 @@ public class SparkRunner {
 	static MongoClient kgClient = KGMongoSingleton.getInstance().getMongoClient();
 
 	public static void sparkConnect(String[] args) {
+		java.util.logging.Logger.getLogger("org.mongodb.driver").setLevel(java.util.logging.Level.SEVERE);
 		SparkConf conf = new SparkConf()
+//				.setMaster("local")
 				.setAppName("text_file");
 		JavaSparkContext sc = new JavaSparkContext(conf);
-
+//		String path = "E:\\IntellijProject\\kg-tag\\data\\test1.json";
+//		String outputPath = "E:\\IntellijProject\\kg-tag\\data\\result";
+		String path = args[0];
+		String outputPath = args[1];
 		String taggingDBName = ConstResource.KG;
 		MongoCollection<Document> col = kgClient.getDatabase(taggingDBName).getCollection("parent_son");
 		String[] taggingField = ConstResource.FIELDS.split(",");
@@ -37,11 +43,12 @@ public class SparkRunner {
 		List<Long> conceptSonList = new ArrayList<Long>();
 		ConstResource.CONCEPTLIST.forEach(concept -> conceptSonList.addAll(TaggerUtil.findAllSon(col, concept)));
 		SemanticSegUtil.segInit(entitySonList,conceptSonList);
-		AnsjUtil.init(taggingDBName);
-		JavaRDD<JSONObject> resultRDD = sc.textFile(args[0])
+		Broadcast<Map<String,Map<Long,Map<Long,TaggingItem>>>> kgNameParentIdMapBroadCast = sc.broadcast(SemanticSegUtil.kgNameParentIdMap);
+		Broadcast<Map<String,Map<String,List<TaggingItem>>>> kgWordIdMapBroadCast = sc.broadcast(SemanticSegUtil.kgWordIdMap);
+		AnsjUtil.init(taggingDBName,kgWordIdMapBroadCast.value().keySet());
+		JavaRDD<JSONObject> resultRDD = sc.textFile(path).repartition(10)
                 .map(doc -> {
 					JSONObject docObj = JSONObject.parseObject(doc);
-					Map<String,String> mapFields = TaggerUtil.reverseMap(ConstResource.MAPFIELDS);
 					for (String field : taggingField) {
 						if (docObj.containsKey(field)) {
 							if (docObj.get(field) != null) {
@@ -53,22 +60,12 @@ public class SparkRunner {
 					String text = doc;
 					List<TaggingItem> taggingList;
 					List<TaggingItem> parentTaggingList;
-					JSONObject jsonObject = new JSONObject();
+					JSONObject jsonObject;
 					try{
-						Map<String, List<TaggingItem>> tagResultMap = SemanticSegUtil.ansjSeg(taggingDBName, text);
+						Map<String, List<TaggingItem>> tagResultMap = SemanticSegUtil.ansjSeg(taggingDBName, text,kgWordIdMapBroadCast.value(),kgNameParentIdMapBroadCast.value());
 						taggingList = tagResultMap.get("tagging");
 						parentTaggingList = tagResultMap.get("taggingParent");
-						for (String key : docObj.keySet()) {
-							if (mapFields.containsKey(key)) {
-								if (key.equals("content")) {
-									List<String> contentList = new ArrayList<String>();
-									contentList = ContentFilter.getSplitContent(docObj.get("content").toString());
-									jsonObject.put(mapFields.get(key), contentList);
-								} else {
-									jsonObject.put(mapFields.get(key), docObj.get(key) != null ? docObj.get(key) : "");
-								}
-							}
-						}
+						jsonObject = docObj;
 						if (taggingList.size() > 0) {
 							if (docObj.containsKey("annotation_tag")) {
 								taggingList.addAll(docObj.getObject("annotation_tag",List.class));
@@ -87,14 +84,11 @@ public class SparkRunner {
 					} catch (Exception e) {
 						throw e;
 					}
-//					jsonObject.put("thread",Thread.currentThread().getId());
-//					InetAddress addr = InetAddress.getLocalHost();
-//					String ip = addr.getHostAddress().toString();
-//					jsonObject.put("ip",ip);
                     return jsonObject;
 		});
         
-		resultRDD.coalesce(1).saveAsTextFile(args[1]);
+		resultRDD.saveAsTextFile(outputPath);
+//		resultRDD.collect().forEach(s -> s.get("_id"));
 	}
 
 

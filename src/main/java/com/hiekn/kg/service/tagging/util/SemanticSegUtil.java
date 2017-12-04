@@ -11,6 +11,7 @@ import com.sun.xml.bind.v2.runtime.reflect.opt.Const;
 import org.apache.log4j.Logger;
 import org.bson.Document;
 import org.elasticsearch.common.collect.Lists;
+import org.elasticsearch.common.collect.Sets;
 
 import java.io.BufferedReader;
 import java.util.*;
@@ -29,7 +30,7 @@ public class SemanticSegUtil {
     /**
      * 记录每一个kg中概念的层级结构 第一个key dbname 第二个key 当前概念 第三个key 当前概念的父概念id名称
      */
-	public static Map<String,Map<Long,Map<Long,String>>> kgNameParentIdMap = new HashMap<String, Map<Long,Map<Long,String>>>();
+	public static Map<String,Map<Long,Map<Long,TaggingItem>>> kgNameParentIdMap = new HashMap<String, Map<Long,Map<Long,TaggingItem>>>();
     
     /**
      * kgName 实例object list
@@ -37,72 +38,60 @@ public class SemanticSegUtil {
     public static Map<String,List<TaggingItem>> kgWordMap = Maps.newHashMap();
     public static Map<String,Map<String,List<TaggingItem>>> kgWordIdMap = Maps.newHashMap();
 
-    public static void main(String[] args) {
-    	try {
-    		String taggingDBName = ConstResource.KG;
-			MongoCollection<Document> col = kgClient.getDatabase(taggingDBName).getCollection("parent_son");
-			String[] taggingField = ConstResource.FIELDS.split(",");
-			List<Long> entitySonList = new ArrayList<Long>();
-			ConstResource.INSTANCELIST.forEach(instance -> entitySonList.addAll(TaggerUtil.findAllSon(col, instance)));
-			List<Long> conceptSonList = new ArrayList<Long>();
-			ConstResource.CONCEPTLIST.forEach(concept -> conceptSonList.addAll(TaggerUtil.findAllSon(col, concept)));
-			String input = "";
-			BufferedReader br = BufferedReaderUtil.getBuffer("data/patent_with_id.txt");
-			while ((input = br.readLine()) != null) {
-				ansjSeg(ConstResource.KG, input);
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
-
 	public static void segInit(List<Long> entityList, List<Long> conceptList) {
 		//初始化父概念map
 		String kgName = ConstResource.KG;
-		if (!kgNameParentIdMap.containsKey(kgName)) {
-			synchronized (SemanticSegUtil.class) {
-				if (!kgNameParentIdMap.containsKey(kgName)) {
-					initParentMap(kgName);
-				}
-			}
-		}
-		Map<Long,Map<Long,String>> parentIdNameMap = kgNameParentIdMap.get(kgName);
+		initParentMap(kgName);
 		//初始化实例map
-		if (!kgWordMap.containsKey(kgName)) {
-			synchronized (SemanticSegUtil.class) {
-				if (!kgWordMap.containsKey(kgName)) {
-					initKgWordMap(kgName, entityList, conceptList);
-				}
-			}
-		}
+		initKgWordMap(kgName, entityList, conceptList);
 	}
 
-	public static Map<String,List<TaggingItem>> ansjSeg(String kgName,String txt) {
+	public static Map<String,List<TaggingItem>> ansjSeg(String kgName,String txt,
+														Map<String,Map<String,List<TaggingItem>>> kgWordIdOutMap,
+														Map<String,Map<Long,Map<Long,TaggingItem>>> kgNameParentIdOutMap) {
 		long t1 = System.currentTimeMillis();
 		Map<String,List<TaggingItem>> resultTagMap = Maps.newHashMap();
+		Map<String, List<TaggingItem>> wordIdMap;
+		Map<Long, Map<Long, TaggingItem>> idParentIdMap;
+		if (kgWordIdOutMap == null & kgNameParentIdOutMap == null) {
+			wordIdMap = kgWordIdMap.get(kgName);
+			idParentIdMap = kgNameParentIdMap.get(kgName);
+		} else {
+			wordIdMap = kgWordIdOutMap.get(kgName);
+			idParentIdMap = kgNameParentIdOutMap.get(kgName);
+		}
 		List<TaggingItem> taggingItemList = Lists.newArrayList();
 		List<TaggingItem> parentTaggingItemList = Lists.newArrayList();
 		Set<String> ansjWord = AnsjUtil.getAnsjWord(txt);
-		Map<String, List<TaggingItem>> wordIdMap = kgWordIdMap.get(kgName);
 		for (String s : ansjWord) {
 			if (wordIdMap.keySet().contains(s)) {
 				taggingItemList.addAll(wordIdMap.get(s));
 			}
 		}
+		Set<Long> parentIdDedupSet = Sets.newHashSet(); //排重父概念ID
 		for (TaggingItem taggingItem : taggingItemList) {
 			long classId = taggingItem.getClassId();
-			Map<Long, String> classParentMap = kgNameParentIdMap.get(kgName).get(classId);
-			for (Entry<Long, String> entry : classParentMap.entrySet()) {
-				TaggingItem parentItem = new TaggingItem(entry.getKey(), entry.getValue());
-				parentTaggingItemList.add(parentItem);
+			Map<Long, TaggingItem> classParentMap = idParentIdMap.get(classId);
+			for (Entry<Long, TaggingItem> entry : classParentMap.entrySet()) {
+				if (!parentIdDedupSet.contains(entry.getKey())) {
+					TaggingItem parentItem = entry.getValue();
+					parentTaggingItemList.add(parentItem);
+					parentIdDedupSet.add(entry.getKey());
+				}
 			}
 		}
 		resultTagMap.put("tagging", taggingItemList);
 		resultTagMap.put("taggingParent", parentTaggingItemList);
-		System.out.println(System.currentTimeMillis() - t1);
-//		System.out.println(JSON.toJSON(taggingItemList));
-//		System.out.println(JSON.toJSON(parentTaggingItemList));
 		return resultTagMap;
+	}
+
+	/**
+	 * @param kgName
+	 * @param txt
+	 * @return
+	 */
+	public static Map<String,List<TaggingItem>> ansjSeg(String kgName,String txt) {
+		return ansjSeg(kgName, txt, null, null);
 	}
 	
 	/**
@@ -113,25 +102,8 @@ public class SemanticSegUtil {
 	 */
 	public static Map<String,ParentItemBean> segByDbIndex(String kgName, String text, List<Long> conceptList,List<Long> entityList){
 		long t0 = System.currentTimeMillis();
-//		log.info("start seg");
-		//初始化父概念map
-		if (!kgNameParentIdMap.containsKey(kgName)) {
-			synchronized (SemanticSegUtil.class) {
-				if (!kgNameParentIdMap.containsKey(kgName)) {
-					initParentMap(kgName);
-				}
-			}
-		}
-		Map<Long,Map<Long,String>> parentIdNameMap = kgNameParentIdMap.get(kgName);
+		Map<Long,Map<Long,TaggingItem>> parentIdNameMap = kgNameParentIdMap.get(kgName);
 		Map<String,ParentItemBean> dataMap = new HashMap<String,ParentItemBean>();
-		//初始化实例map
-		if (!kgWordMap.containsKey(kgName)) {
-			synchronized (SemanticSegUtil.class) {
-				if (!kgWordMap.containsKey(kgName)) {
-					initKgWordMap(kgName, entityList, conceptList);
-				}
-			}
-		}
 		try {
 			if (kgWordMap.containsKey(kgName)) {
 				List<TaggingItem> objList = kgWordMap.get(kgName);
@@ -141,7 +113,7 @@ public class SemanticSegUtil {
 					long id = dbObj.getId();
 					long conceptId = dbObj.getClassId();
 					if (word.length() > 1) {
-						int wordCount = getCount2(text, word);
+						int wordCount = getCount(text, word);
 						if (wordCount != 0) {
 							if (!dataMap.containsKey(word)) {
 								ParentItemBean pi = new ParentItemBean();
@@ -191,14 +163,6 @@ public class SemanticSegUtil {
         return false;
     }
 
-    private static int getCount2(String input, String word) {
-		int count = 0;
-		if (input.contains(word)) {
-			count = 1;
-		}
-		return count;
-	}
-	
 	private static int getCount(String input, String word) {
 		int count = 0;
 		int index = 0;
@@ -245,12 +209,6 @@ public class SemanticSegUtil {
 		return count;
 	}
 
-	private static int getCount(String input, String word,boolean bool) {
-		int count = 0;
-		if (input.contains(word)) count = 1;
-		return count;
-	}
-	
 	private static void initKgWordMap(String kgName, List<Long> entityList, List<Long> conceptList) {
 		long t1 = System.currentTimeMillis();
 		BasicDBList searchList = new BasicDBList();
@@ -295,7 +253,7 @@ public class SemanticSegUtil {
 		long t1 = System.currentTimeMillis();
 		MongoCollection<Document> col = kgClient.getDatabase(dbName).getCollection("parent_son");
 		Map<Long,Set<Long>> parentIdMap = new HashMap<Long,Set<Long>>();
-		Map<Long,Map<Long,String>> parentIdNameMap = new HashMap<Long, Map<Long,String>>();
+		Map<Long,Map<Long,TaggingItem>> parentIdNameMap = new HashMap<Long, Map<Long,TaggingItem>>();
 		MongoCursor<Document> cursor = col.find().iterator();
 		while (cursor.hasNext()) {
 			Document doc = cursor.next();
@@ -313,13 +271,18 @@ public class SemanticSegUtil {
 				}
 			}
 		}
-		
+		Map<Long,TaggingItem> alreadySearchItem = Maps.newHashMap();
 		for (Entry<Long, Set<Long>> entry : parentIdMap.entrySet()) {
-			Map<Long,String> idNameMap = new HashMap<Long, String>();
+			Map<Long,TaggingItem> idNameMap = new HashMap<Long, TaggingItem>();
 			Set<Long> idSet =  entry.getValue();
 			for (Long id : idSet) {
-				String name = getNameById(id, dbName);
-				idNameMap.put(id, name);
+				if (!alreadySearchItem.containsKey(id)) {
+					TaggingItem item = getNameById(id, dbName);
+					idNameMap.put(id, item);
+					alreadySearchItem.put(id, item);
+				} else {
+					idNameMap.put(id, alreadySearchItem.get(id));
+				}
 			}
 			parentIdNameMap.put(entry.getKey(), idNameMap);
 		}
@@ -329,14 +292,20 @@ public class SemanticSegUtil {
 		log.info("init parent " + dbName + " finish using " + (System.currentTimeMillis() - t1)); 
 	}
 	
-	private static String getNameById(long id,String kgName) {
-		String name = "";
+	private static TaggingItem getNameById(long id,String kgName) {
+		TaggingItem resultItem = new TaggingItem();
 		MongoCursor<Document> cursor = kgClient.getDatabase(kgName).getCollection("entity_id")
 				.find(new Document("id",id)).iterator();
 		if (cursor.hasNext()) {
-			name = cursor.next().getString("name");
+			Document doc = cursor.next();
+			try {
+				resultItem = new TaggingItem(doc.getLong("id"), doc.getString("name"),doc.getLong("concept_id"));
+			} catch (Exception e) {
+				System.out.println(doc.toJson());
+//				e.printStackTrace();
+			}
 		}
-		return name;
+		return resultItem;
 	}
 	
 	private static boolean isEnglishCharactor(char i) {
@@ -354,7 +323,7 @@ class ParentItemBean {
 
 	private List<Long> id;
 	private int count;
-	private Map<Long, String> parentNameIdMap;
+	private Map<Long, TaggingItem> parentNameIdMap;
 
 	public List<Long> getId() {
 		return id;
@@ -372,11 +341,11 @@ class ParentItemBean {
 		this.count = count;
 	}
 
-	public Map<Long, String> getParentNameIdMap() {
+	public Map<Long, TaggingItem> getParentNameIdMap() {
 		return parentNameIdMap;
 	}
 
-	public void setParentNameIdMap(Map<Long, String> parentNameIdMap) {
+	public void setParentNameIdMap(Map<Long, TaggingItem> parentNameIdMap) {
 		this.parentNameIdMap = parentNameIdMap;
 	}
 }

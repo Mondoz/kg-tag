@@ -35,6 +35,9 @@ public class AnsjUtil {
 		return wordSet;
 	}
 
+	public static void init(String kgName, Set<String> wordSet) {
+		wordSet.forEach(word -> DicLibrary.insert(DicLibrary.DEFAULT, word));
+	}
 
 	public static void init(String kgName) {
 		List<TaggingItem> list = SemanticSegUtil.kgWordMap.get(kgName);

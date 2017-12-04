@@ -165,7 +165,7 @@ class LocalReader implements Runnable {
 						log.error(e);
 						throw e;
 					}
-					log.info(Thread.currentThread().getId() + " process using " + (System.currentTimeMillis() - t1));
+//					log.info(Thread.currentThread().getId() + " process using " + (System.currentTimeMillis() - t1));
 					sb.append(jsonObject.toJSONString() + "\r\n");
 					if (ccount % bulk == 0) {
 						log.info(bulk + " finish");

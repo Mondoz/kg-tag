@@ -27,7 +27,7 @@ public class DataProcess {
     public void t1() {
         try {
             FileWriter fw = new FileWriter("data/aaaaaaaa.txt");
-            File[] file = new File("data/patent_ori").listFiles();
+            File[] file = new File("data/test").listFiles();
             Set<String> set = new HashSet<String>();
             for (File file1 : file) {
                 BufferedReader br = BufferedReaderUtil.getBuffer(file1.getPath());

@@ -1,30 +1,22 @@
 package com.hiekn.kg.service.tagging.service;
 
-import java.io.BufferedReader;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-
-import com.hiekn.kg.service.tagging.util.BufferedReaderUtil;
-import com.hiekn.kg.service.tagging.util.ConstResource;
-import org.apache.log4j.Logger;
-import org.bson.Document;
-
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import com.google.common.collect.Lists;
+import com.hiekn.kg.service.tagging.util.BufferedReaderUtil;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.QueryOperators;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
+import org.apache.log4j.Logger;
+import org.bson.Document;
 import org.junit.Test;
+
+import java.io.BufferedReader;
+import java.io.FileWriter;
+import java.util.*;
+import java.util.Map.Entry;
 
 /**
  * @author xiaohuqi E-mail:xiaohuqi@126.com
@@ -39,14 +31,19 @@ public class T0 {
 	@Test
 	public void t7() {
 		try {
+			FileWriter fw = new FileWriter("data/result.txt");
+			StringBuffer sb = new StringBuffer();
 			String input = "";
 			String str = "";
-			BufferedReader br = BufferedReaderUtil.getBuffer("data/test.txt");
+			BufferedReader br = BufferedReaderUtil.getBuffer("data/test1.json");
 			while ((input = br.readLine()) != null) {
 				str = input;
 			}
 			JSONObject obj = JSONObject.parseObject(str);
-			System.out.println(JSON.toJSON(obj));
+			System.out.println(obj.toJSONString());
+			sb.append(obj.toJSONString());
+			fw.write(sb.toString());
+			fw.close();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

@@ -35,11 +35,8 @@ public class SparkRunner {
 	public static void sparkConnect(String[] args) {
 		java.util.logging.Logger.getLogger("org.mongodb.driver").setLevel(java.util.logging.Level.SEVERE);
 		SparkConf conf = new SparkConf()
-//				.setMaster("local")
 				.setAppName("text_file");
 		JavaSparkContext sc = new JavaSparkContext(conf);
-//		String path = "E:\\IntellijProject\\kg-tag\\data\\test1.json";
-//		String outputPath = "E:\\IntellijProject\\kg-tag\\data\\result";
 		String path = args[0];
 		String outputPath = args[1];
 		String taggingDBName = ConstResource.KG;
@@ -56,7 +53,6 @@ public class SparkRunner {
 		Broadcast<Forest> broadForest = sc.broadcast(Library.makeForest(wordList));
 		Broadcast<Map<String,Map<Long,Map<Long,TaggingItem>>>> kgNameParentIdMapBroadCast = sc.broadcast(SemanticSegUtil.kgNameParentIdMap);
 		Broadcast<Map<String,Map<String,List<TaggingItem>>>> kgWordIdMapBroadCast = sc.broadcast(SemanticSegUtil.kgWordIdMap);
-//		AnsjUtil.init(taggingDBName,kgWordIdMapBroadCast.value().get(ConstResource.KG).keySet());
 
 		JavaRDD<JSONObject> resultRDD = sc.textFile(path).repartition(10)
                 .map(doc -> {
@@ -100,7 +96,6 @@ public class SparkRunner {
                     return jsonObject;
 		});
 		resultRDD.saveAsTextFile(outputPath);
-//		resultRDD.collect().forEach(s -> System.out.println(s));
 	}
 }
 

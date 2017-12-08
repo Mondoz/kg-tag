@@ -21,10 +21,9 @@ import java.util.Map.Entry;
 /**
  * @author xiaohuqi E-mail:xiaohuqi@126.com
  * @version 2016年11月28日 下午8:19:25
- * 
  */
 public class T0 {
-	
+
 	private static final Logger log = Logger.getLogger(T0.class);
 
 
@@ -32,26 +31,29 @@ public class T0 {
 	public void t7() {
 		try {
 			FileWriter fw = new FileWriter("data/result.txt");
-			StringBuffer sb = new StringBuffer();
-			String input = "";
-			String str = "";
-			BufferedReader br = BufferedReaderUtil.getBuffer("data/test1.json");
-			while ((input = br.readLine()) != null) {
-				str = input;
-			}
-			JSONObject obj = JSONObject.parseObject(str);
-			System.out.println(obj.toJSONString());
-			sb.append(obj.toJSONString());
-			fw.write(sb.toString());
+			String a = "{\"title\":\"s\",\"value\":\"a\\u000b\"}";
+			fw.write(JSONObject.parseObject(a).toString());
 			fw.close();
+//			StringBuffer sb = new StringBuffer();
+//			String input = "";
+//			String str = "";
+//			BufferedReader br = BufferedReaderUtil.getBuffer("data/test1.json");
+//			while ((input = br.readLine()) != null) {
+//				str = input;
+//			}
+//			JSONObject obj = JSONObject.parseObject(str);
+//			System.out.println(obj.toJSONString());
+//			sb.append(obj.toJSONString());
+//			fw.write(sb.toString());
+//			fw.close();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
-	
+
 	@Test
 	public void t6() {
-		MongoClient client = new MongoClient("127.0.0.1",27017);
+		MongoClient client = new MongoClient("127.0.0.1", 27017);
 		MongoCollection<Document> col = client.getDatabase("tj").getCollection("tj_test");
 		MongoCursor<Document> cursor = col.find().iterator();
 		while (cursor.hasNext()) {
@@ -66,12 +68,12 @@ public class T0 {
 		}
 		client.close();
 	}
-	
+
 	@Test
 	public void t5() {
-		MongoClient client = new MongoClient("192.168.1.189",19130);
+		MongoClient client = new MongoClient("192.168.1.189", 19130);
 		MongoCollection<Document> col = client.getDatabase("kg_tj").getCollection("parent_son");
-		Map<Long,Set<Long>> parentMap = new HashMap<Long,Set<Long>>();
+		Map<Long, Set<Long>> parentMap = new HashMap<Long, Set<Long>>();
 		MongoCursor<Document> cursor = col.find().iterator();
 		while (cursor.hasNext()) {
 			Document doc = cursor.next();
@@ -88,12 +90,12 @@ public class T0 {
 				}
 			}
 		}
-		for (Entry<Long,Set<Long>> entry : parentMap.entrySet()) {
+		for (Entry<Long, Set<Long>> entry : parentMap.entrySet()) {
 			System.out.println(entry.getKey() + "" + entry.getValue());
 		}
 		client.close();
 	}
-	
+
 	@Test
 	public void t4() {
 		String sa = "z";
@@ -105,26 +107,27 @@ public class T0 {
 		System.out.println(ia);
 		System.out.println(iZ);
 	}
-	
+
 	@Test
 	public void t3() {
 		long t1 = System.currentTimeMillis();
-		MongoClient client = new MongoClient("47.104.13.92",19130);
+		MongoClient client = new MongoClient("47.104.13.92", 19130);
 		MongoCollection<Document> col = client.getDatabase("annotation_source").getCollection("dcb");
 		MongoCursor<Document> cursor = col.find().iterator();
-		int count = 0 ;
+		int count = 0;
 		long ct = System.currentTimeMillis();
 		while (cursor.hasNext()) {
 			cursor.next();
-			if (count++ % 10 == 0) System.out.println(System.currentTimeMillis() - ct); ct = System.currentTimeMillis();
+			if (count++ % 10 == 0) System.out.println(System.currentTimeMillis() - ct);
+			ct = System.currentTimeMillis();
 		}
 		System.out.println(System.currentTimeMillis() - t1);
 		client.close();
 	}
-	
-	public List<Long> findAllSon(MongoCollection<Document> col,long id) {
+
+	public List<Long> findAllSon(MongoCollection<Document> col, long id) {
 		List<Long> sonList = new ArrayList<Long>();
-		MongoCursor<Document> cursor = col.find(new Document("parent",id)).iterator();
+		MongoCursor<Document> cursor = col.find(new Document("parent", id)).iterator();
 		try {
 			while (cursor.hasNext()) {
 				Document doc = cursor.next();
@@ -138,12 +141,12 @@ public class T0 {
 		}
 		return sonList;
 	}
-	
+
 	@Test
 	public void t2() {
-		Map<String,List<Document>> dataMap = new HashMap<String, List<Document>>();
-		MongoClient client = new MongoClient("192.168.1.156",27017);
-		MongoCursor<Document> cursor = client.getDatabase("data").getCollection("tj_data").find() .iterator();
+		Map<String, List<Document>> dataMap = new HashMap<String, List<Document>>();
+		MongoClient client = new MongoClient("192.168.1.156", 27017);
+		MongoCursor<Document> cursor = client.getDatabase("data").getCollection("tj_data").find().iterator();
 		try {
 			while (cursor.hasNext()) {
 				Document doc = cursor.next();
@@ -162,28 +165,28 @@ public class T0 {
 			cursor.close();
 		}
 		System.out.println("load success");
-		for (Entry<String,List<Document>> entry : dataMap.entrySet()) {
+		for (Entry<String, List<Document>> entry : dataMap.entrySet()) {
 			client.getDatabase("data").getCollection("tj_" + entry.getKey()).insertMany(entry.getValue());
 			System.out.println(entry.getKey() + " insert success");
 		}
 		client.close();
 	}
-	
+
 	public static void main(String[] args) {
 		List<String> entityIdList = new ArrayList<String>();
 		entityIdList.add("aaa");
-		entityIdList.add("bbbb");		
+		entityIdList.add("bbbb");
 		DBObject whereDbo = new BasicDBObject("entity_id", new BasicDBObject(QueryOperators.IN, entityIdList));
-		
+
 		List<Integer> corpusTypeList = new ArrayList<Integer>();
 		corpusTypeList.add(1);
 		corpusTypeList.add(2);
 		whereDbo.put("source_type", new BasicDBObject(QueryOperators.IN, corpusTypeList));
-		
+
 		whereDbo.put("name", "nane0");
 		whereDbo.put("id", 100);
 		whereDbo.put("version", new BasicDBObject(QueryOperators.GT, 1.5));
-		
+
 		System.out.println(whereDbo.toString());
 	}
 

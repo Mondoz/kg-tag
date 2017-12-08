@@ -45,7 +45,7 @@ public class BufferedRunner {
 			List<Long> conceptSonList = new ArrayList<Long>();
 			ConstResource.CONCEPTLIST.forEach(concept -> conceptSonList.addAll(TaggerUtil.findAllSon(col, concept)));
 			SemanticSegUtil.segInit(entitySonList,conceptSonList);
-			AnsjUtil.init(taggingDBName);
+			AnsjUtil.init(taggingDBName,SemanticSegUtil.kgWordIdMap.get(taggingDBName).keySet());
 			int limit = allCount / threads;
 			for (int i = 0; i < threads; i++) {
 				if (i == threads-1) {

@@ -8,10 +8,14 @@ import com.mongodb.*;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.sun.xml.bind.v2.runtime.reflect.opt.Const;
+import org.ansj.domain.Result;
+import org.ansj.library.DicLibrary;
+import org.ansj.splitWord.analysis.DicAnalysis;
 import org.apache.log4j.Logger;
 import org.bson.Document;
 import org.elasticsearch.common.collect.Lists;
 import org.elasticsearch.common.collect.Sets;
+import org.nlpcn.commons.lang.tire.domain.Forest;
 
 import java.io.BufferedReader;
 import java.util.*;
@@ -46,7 +50,7 @@ public class SemanticSegUtil {
 		initKgWordMap(kgName, entityList, conceptList);
 	}
 
-	public static Map<String,List<TaggingItem>> ansjSeg(String kgName,String txt,
+	public static Map<String,List<TaggingItem>> ansjSeg(String kgName,String txt,Forest forest,
 														Map<String,Map<String,List<TaggingItem>>> kgWordIdOutMap,
 														Map<String,Map<Long,Map<Long,TaggingItem>>> kgNameParentIdOutMap) {
 		long t1 = System.currentTimeMillis();
@@ -56,13 +60,16 @@ public class SemanticSegUtil {
 		if (kgWordIdOutMap == null & kgNameParentIdOutMap == null) {
 			wordIdMap = kgWordIdMap.get(kgName);
 			idParentIdMap = kgNameParentIdMap.get(kgName);
+			log.info(kgName + " kg word map is null");
 		} else {
 			wordIdMap = kgWordIdOutMap.get(kgName);
 			idParentIdMap = kgNameParentIdOutMap.get(kgName);
+			log.info("use local file");
 		}
 		List<TaggingItem> taggingItemList = Lists.newArrayList();
 		List<TaggingItem> parentTaggingItemList = Lists.newArrayList();
-		Set<String> ansjWord = AnsjUtil.getAnsjWord(txt);
+//		Set<String> ansjWord = AnsjUtil.getAnsjWord(txt,wordIdMap.keySet());
+		Set<String> ansjWord = AnsjUtil.getAnsjWord(txt,forest);
 		for (String s : ansjWord) {
 			if (wordIdMap.keySet().contains(s)) {
 				taggingItemList.addAll(wordIdMap.get(s));
@@ -91,7 +98,7 @@ public class SemanticSegUtil {
 	 * @return
 	 */
 	public static Map<String,List<TaggingItem>> ansjSeg(String kgName,String txt) {
-		return ansjSeg(kgName, txt, null, null);
+		return ansjSeg(kgName, txt,null, null, null);
 	}
 	
 	/**

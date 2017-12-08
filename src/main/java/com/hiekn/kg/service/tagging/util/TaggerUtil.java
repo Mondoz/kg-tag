@@ -439,7 +439,7 @@ public class TaggerUtil implements Runnable{
 		List<TaggingItem> taggingList = Lists.newArrayList();
 		List<TaggingItem> parentTaggingList = Lists.newArrayList();
 		Map<String, ParentItemBean> map = SemanticSegUtil.segByDbIndex(taggingDBName, text,conceptSonList,entitySonList);
-		Set<String> ansjWord = AnsjUtil.getAnsjWord(text, map.keySet());
+		Set<String> ansjWord = AnsjUtil.getAnsjWord(text, taggingDBName,map.keySet());
 		Map<Long, Integer> idMap = new HashMap<Long, Integer>();
 		double baseScore = 1 / Math.sqrt(text.length());
 		Map<Long,Map<Long,TaggingItem>> parentIdNameMap = new HashMap<Long, Map<Long,TaggingItem>>();

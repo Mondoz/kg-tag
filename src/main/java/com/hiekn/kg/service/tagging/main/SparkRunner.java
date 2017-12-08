@@ -6,17 +6,24 @@ import com.hiekn.kg.service.tagging.mongo.KGMongoSingleton;
 import com.hiekn.kg.service.tagging.util.*;
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
+import org.ansj.domain.Result;
+import org.ansj.splitWord.analysis.DicAnalysis;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.broadcast.Broadcast;
 import org.bson.Document;
+import org.elasticsearch.common.collect.Lists;
 import org.jsoup.Jsoup;
+import org.nlpcn.commons.lang.tire.domain.Forest;
+import org.nlpcn.commons.lang.tire.domain.Value;
+import org.nlpcn.commons.lang.tire.library.Library;
 
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class SparkRunner {
 	public static void main(String[] args) {
@@ -43,9 +50,14 @@ public class SparkRunner {
 		List<Long> conceptSonList = new ArrayList<Long>();
 		ConstResource.CONCEPTLIST.forEach(concept -> conceptSonList.addAll(TaggerUtil.findAllSon(col, concept)));
 		SemanticSegUtil.segInit(entitySonList,conceptSonList);
+		List<Value> wordList = Lists.newArrayList();
+		String[] arr = {"1","2","3"};
+		SemanticSegUtil.kgWordIdMap.get(taggingDBName).keySet().forEach(s -> wordList.add(new Value(s,arr)));
+		Broadcast<Forest> broadForest = sc.broadcast(Library.makeForest(wordList));
 		Broadcast<Map<String,Map<Long,Map<Long,TaggingItem>>>> kgNameParentIdMapBroadCast = sc.broadcast(SemanticSegUtil.kgNameParentIdMap);
 		Broadcast<Map<String,Map<String,List<TaggingItem>>>> kgWordIdMapBroadCast = sc.broadcast(SemanticSegUtil.kgWordIdMap);
-		AnsjUtil.init(taggingDBName,kgWordIdMapBroadCast.value().keySet());
+//		AnsjUtil.init(taggingDBName,kgWordIdMapBroadCast.value().get(ConstResource.KG).keySet());
+
 		JavaRDD<JSONObject> resultRDD = sc.textFile(path).repartition(10)
                 .map(doc -> {
 					JSONObject docObj = JSONObject.parseObject(doc);
@@ -62,7 +74,8 @@ public class SparkRunner {
 					List<TaggingItem> parentTaggingList;
 					JSONObject jsonObject;
 					try{
-						Map<String, List<TaggingItem>> tagResultMap = SemanticSegUtil.ansjSeg(taggingDBName, text,kgWordIdMapBroadCast.value(),kgNameParentIdMapBroadCast.value());
+//						Map<String, List<TaggingItem>> tagResultMap = SemanticSegUtil.ansjSeg(taggingDBName, text, broadForest.value());
+						Map<String, List<TaggingItem>> tagResultMap = SemanticSegUtil.ansjSeg(taggingDBName, text,broadForest.value(),kgWordIdMapBroadCast.value(),kgNameParentIdMapBroadCast.value());
 						taggingList = tagResultMap.get("tagging");
 						parentTaggingList = tagResultMap.get("taggingParent");
 						jsonObject = docObj;
@@ -86,12 +99,9 @@ public class SparkRunner {
 					}
                     return jsonObject;
 		});
-        
 		resultRDD.saveAsTextFile(outputPath);
-//		resultRDD.collect().forEach(s -> s.get("_id"));
+//		resultRDD.collect().forEach(s -> System.out.println(s));
 	}
-
-
 }
 
 

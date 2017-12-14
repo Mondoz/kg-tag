@@ -41,7 +41,8 @@ public class SparkRunner {
 		String outputPath = args[1];
 		String taggingDBName = ConstResource.KG;
 		MongoCollection<Document> col = kgClient.getDatabase(taggingDBName).getCollection("parent_son");
-		String[] taggingField = ConstResource.FIELDS.split(",");
+//		String[] taggingField = ConstResource.FIELDS.split(",");
+		Map<String, String> tagfields = ConstResource.TAGFIELDS;
 		List<Long> entitySonList = new ArrayList<Long>();
 		ConstResource.INSTANCELIST.forEach(instance -> entitySonList.addAll(TaggerUtil.findAllSon(col, instance)));
 		List<Long> conceptSonList = new ArrayList<Long>();
@@ -57,20 +58,11 @@ public class SparkRunner {
 		JavaRDD<JSONObject> resultRDD = sc.textFile(path).repartition(10)
                 .map(doc -> {
 					JSONObject docObj = JSONObject.parseObject(doc);
-					for (String field : taggingField) {
-						if (docObj.containsKey(field)) {
-							if (docObj.get(field) != null) {
-								doc = doc + Jsoup.parse(docObj.get(field).toString()).text() + "\t";
-							}
-						}
-					}
-					doc = doc.toLowerCase();
-					String text = doc;
+					String text = ParseUtil.parse(docObj,tagfields);
 					List<TaggingItem> taggingList;
 					List<TaggingItem> parentTaggingList;
 					JSONObject jsonObject;
 					try{
-//						Map<String, List<TaggingItem>> tagResultMap = SemanticSegUtil.ansjSeg(taggingDBName, text, broadForest.value());
 						Map<String, List<TaggingItem>> tagResultMap = SemanticSegUtil.ansjSeg(taggingDBName, text,broadForest.value(),kgWordIdMapBroadCast.value(),kgNameParentIdMapBroadCast.value());
 						taggingList = tagResultMap.get("tagging");
 						parentTaggingList = tagResultMap.get("taggingParent");
